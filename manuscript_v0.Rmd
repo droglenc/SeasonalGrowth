@@ -41,20 +41,27 @@ vbSO <- vbFuns("Somers2")
 ```{r maketprFun, echo=FALSE}
 ################################################################################
 ## internal function to compute t-prime
-## 
 ################################################################################
 iCalc_tpr <- function(t,WP,NGT) {
-  ## First NGT stats at WP, use this to shift each age such that
+  ## No-growth period starts at WP-NGT/2.  Use this to shift each age such that
   ##    first NGT would correspond to a value of 0
   tshift <- WP-NGT/2
   tmp.t <- t-tshift
   ## Find fraction of year on this new time scale for each adjusted age
+  ##    by substracting whole number age (e.g, 2.79-2)
   tmp.t2 <- tmp.t-floor(tmp.t)
-  ## Adjust this fraction for no growth
+  ## Adjust this fraction for no growth ... with the time adjustment no-growth
+  ##    is from 0 to NGT in each "year" ... tprime will not increase in NGT so
+  ##    replace all of these fractions with zeroes.  Above NGT, the tprime must
+  ##    have the NGT removed from it (e.g., if NGT=0.4, then 0.79-0.4 is the
+  ##    fraction of the year for which growth occurred.)
   for (i in 1:length(tmp.t2)) {
     if (tmp.t2[i]<=NGT) tmp.t2[i] <- 0
     else tmp.t2[i] <- tmp.t2[i]-NGT
   }
+  ## Now get the number of completed growth periods (i.e., floor (tmp.t)) times
+  ##    the length of a growth period (1-NGT) to get the total growth periods
+  ##    completed prior to that year and then add on the fractional piece
   tmp.t <- floor(tmp.t)*(1-NGT)+tmp.t2
   ## Shift back to get tprime (why is NGT needed here)
   tpr <- tmp.t+tshift+NGT
@@ -65,18 +72,12 @@ iCalc_tpr <- function(t,WP,NGT) {
 ```{r makePaulyFun, echo=FALSE}
 ################################################################################
 ## Main Function
-##
 ##   Linf, t0 as usual
 ##   Kpr = K-prime as defined in Pauly et al. (units are diff than usual K)
-##   WP = "Winter Period" (point where growth=0) = ts+0.5 (ts from Pauly et al.)
-##   NGT = "No Growth Time" = "fraction of a year where no growth occurs
-##
+##   WP = "Winter Period" (middle point of no-growth period)
+##      = ts+0.5 (ts from Pauly et al.)
+##   NGT = "No Growth Time" = "fraction of a year where no growth occurs"
 ##   tpr = "t-prime" = actual age (t) minus cumulative NGT prior to t
-##   Q is as defined in Pauly et al.
-##   qt and qtr are intermediate values to make Pauly SC look similar to the
-##     Somers and Somers2 models from vbFuns() in FSA
-##
-##   The final line is basically Equation 4 from Pauly et al.
 ################################################################################
 
 paulySC <- function(t,Linf,Kpr=NULL,t0=NULL,WP=NULL,NGT=NULL) {
@@ -84,16 +85,16 @@ paulySC <- function(t,Linf,Kpr=NULL,t0=NULL,WP=NULL,NGT=NULL) {
                          WP <- Linf[[4]]; NGT <- Linf[[5]]
                          Linf <- Linf[[1]] }
   tpr <- iCalc_tpr(t,WP,NGT)
-  Q <- (2*pi)/(1-NGT)
-  qt <- (Kpr/Q)*sin(Q*(tpr-WP-0.5))
-  qt0 <- (Kpr/Q)*sin(Q*(t0-WP-0.5))
-  Linf*(1-exp(-Kpr*(tpr-t0)-qt+qt0))
+  q <- Kpr*(tpr-t0) +
+    (Kpr*(1-NGT)/(2*pi))*sin((2*pi)/(1-NGT)*(tpr-WP-0.5)) -
+    (Kpr*(1-NGT)/(2*pi))*sin((2*pi)/(1-NGT)*(t0-WP-0.5))
+  Linf*(1-exp(-q))
 }
 ```
 
 # Introduction
 
-The mean length-at-age for many animals (e.g., ) is often modeled with the von Bertalanffy growth function (VBGF; @vonBertalanffy1938).  The parameterization of the VBGF attributable to @BevertonHolt1957 is most common and may be expressed as 
+The mean length-at-age for many animals (e.g., CITATIONS) is often modeled with the von Bertalanffy growth function (VBGF; @vonBertalanffy1938).  The parameterization of the VBGF attributable to @BevertonHolt1957 is most common and may be expressed as 
 
 $$ L_{t} = L_{\infty}(1-e^{-q}) \quad \quad \text{`r paste0("(",eqncaps("vbMain",display="num"),")")`} $$
 
@@ -103,7 +104,7 @@ $$ q=K(t-t_{0}) \quad \quad \text{`r paste0("(",eqncaps("vbMain2",display="num")
 
 where $L(t)$ is the expected or average length at time (or age) $t$, $L_{\infty}$ is the asymptotic mean length, $K$ is a measure of the exponential rate of approach to the asymptote [@SchnuteFournier1980], and $t_{0}$ is the theoretical time or age (generally negative) at which the mean length would be zero.
 
-Many animals exhibits seasonal oscillations in growth as a response to seasonal changes in environmental factors such as temperature, light, and food supply ().  `r eqncaps("vbMod",display="cite")` of the traditional VBGF has been modified, usually with a sin function, to model these seasonal oscillations in growth.  The most popular of these modifications is from @HoenigChoudarayHanumara1982 and @Somers1988 (and carefully reiterated in @GarciaBerthouetal2012), and uses
+Many animals exhibits seasonal oscillations in growth as a response to seasonal changes in environmental factors such as temperature, light, and food supply (CITATIONS).  `r eqncaps("vbMain2",display="cite")` of the traditional VBGF has been modified, usually with a sin function, to model these seasonal oscillations in growth.  The most popular of these modifications is from @HoenigChoudarayHanumara1982 and @Somers1988 (and carefully reiterated in @GarciaBerthouetal2012), and uses
 
 $$
 \begin{aligned}
@@ -113,7 +114,7 @@ q & =K(t-t_{0}) \\
 \end{aligned}  
 $$
 
-where $C$ modulates the amplitude of the growth oscillations and corresponds to the proportional decrease in growth at the depth of the oscillation (i.e., "winter"), and $t_{s}$ is the time between time 0 and the start of the convex portion of the first sinusoidal growth oscillation (i.e., the inflection point).  If $C$=0, then there is no seasonal oscillation and `r eqncaps("SomersMod",display="cite")` reduces to  `r eqncaps("vbMain2",display="cite")` and the typical VBGF (`r figcaps("SomersExPlot",display="cite")`).  If $C$=1, then growth completely stops once a year at the "winter-point" ($WP=t_{s}+0.5$), whereas values of 0&gt;$C$&lt;1 result in reduced, but not stopped, growth during the winter (`r figcaps("SomersExPlot",display="cite")`).
+where $C$ modulates the amplitude of the growth oscillations and corresponds to the proportional decrease in growth at the depth of the oscillation (i.e., "winter"), and $t_{s}$ is the time between time 0 and the start of the convex portion of the first sinusoidal growth oscillation (i.e., the inflection point).  If $C$=0, then there is no seasonal oscillation and `r eqncaps("SomersMod",display="cite")` reduces to  `r eqncaps("vbMain2",display="cite")` and the typical VBGF (`r figcaps("SomersExPlot",display="cite")`).  If $C$=1, then growth completely stops once a year at the "winter-point" ($WP$), whereas values of 0&lt;$C$&lt;1 result in reduced, but not stopped, growth during the winter (`r figcaps("SomersExPlot",display="cite")`).
 
 \ 
 
@@ -132,14 +133,14 @@ lines(vbSO(t,Linf=c(Linf,K,t0,C=C[4],WP))~t,lwd=2,col=clr[4])
 
 legend("topleft",paste("C",C,sep="="),lwd=2,col=clr,bty="n",inset=-0.02)
 
-figcaps("SomersExPlot",paste0("Example growth trajectory of ",eqncaps('vbMain',display='cite')," using ",eqncaps('SomersMod',display='cite')," with $L_{\\infty}$=",Linf,", $K$=",K,", $t_{0}$=",t0,", $t_{s}$=",WP-0.5," (or $WP$=",WP,"), and four different values of $C$."))
+figcaps("SomersExPlot",paste0("Example VBGF using ",eqncaps('SomersMod',display='cite')," with $L_{\\infty}$=",Linf,", $K$=",K,", $t_{0}$=",t0,", $t_{s}$=",WP-0.5," (or $WP$=",WP,"), and four different values of $C$."))
 ```
 
 `r figcaps("SomersExPlot")`
 
 \ 
 
-Values of $C$&gt;1 (or &lt;0) in  `r eqncaps("SomersMod",display="cite")` allow seasonal decreases in mean length-at-age (`r figcaps("SomersExPlot",display="cite")`).  A decrease in mean length is unlikely for organisms whose skeletons largely preclude shrinkage [@Paulyetal1992], although a seasonal crease in mean length-at-age is possible if size-dependent overwinter mortality occurs [@GarciaBerthouetal2012].  To address this issue, @Paulyetal1992 modified `r eqncaps("SomersMod")` to include a true seasonal no-growth period with a smooth transition of the modeled mean length-at-age into and out of the no-growth period.  Specifically, their modification is
+Values of $C$&gt;1 (or &lt;0) in  `r eqncaps("SomersMod",display="cite")` allow seasonal decreases in mean length-at-age (`r figcaps("SomersExPlot",display="cite")`).  A decrease in mean length is unlikely for organisms whose skeletons largely preclude shrinkage [@Paulyetal1992], although a seasonal decrease in mean length-at-age is possible if size-dependent overwinter mortality occurs [@GarciaBerthouetal2012].  To address this issue, @Paulyetal1992 modified `r eqncaps("SomersMod",display="cite")` to include a true seasonal no-growth period with a smooth transition of the modeled mean length-at-age into and out of the no-growth period.  Specifically, their modification is
 
 \ 
 
@@ -153,9 +154,9 @@ $$
 
 \ 
 
-\noindent where $NGT$ is the "no-growth time" or the length of the no growth period (in fractions of a year) and $t^{'}$ is found by "subtracting from the real age ($t$) the total no-growth time occurring up to age $t$."  Furthermore,  @Paulyetal1992 introduced $K^{'}$ to `r eqncaps("PaulyMod",display="cite")` because the units of $K$ change from $year^{-1}$ in `r eqncaps("SomersMod",display="cite")` to $(1-NGT)^{-1}$ in `r eqncaps("PaulyMod",display="cite")` because $t^{'}$&lt;$t$ for any $t$.  We further note here that $K^{'}$&gt;$K$ because annual growth is compressed into a shorter period ($1-NGT$) in `r eqncaps("PaulyMod",display="cite")` when $NGT$&gt;0.
+\noindent where $NGT$ is the "no-growth time" or the length of the no growth period (as a fraction of a year) and $t^{'}$ is found by "subtracting from the real age ($t$) the total no-growth time occurring up to age $t$."  Furthermore,  @Paulyetal1992 introduced $K^{'}$ to `r eqncaps("PaulyMod",display="cite")` because the units of $K$ change from $year^{-1}$ in `r eqncaps("SomersMod",display="cite")` to $(1-NGT)^{-1}$ in `r eqncaps("PaulyMod",display="cite")` due to $t^{'}$&lt;$t$ for any $t$.  We further note that $K^{'}$&gt;$K$ because annual growth is compressed into a shorter period ($1-NGT$) in `r eqncaps("PaulyMod",display="cite")` when $NGT$&gt;0.
 
-@Paulyetal1992 derived  `r eqncaps("PaulyMod",display="cite")` by assuming $C$=1 (i.e., that the rate of growth is 0 at one point, $WP$), replacing $2\pi$ with $\frac{2\pi}{1-NGT}$ (i.e., restricting the oscillation to the period of growth), and replacing $K$ with $K^{'}$.  Furthermore, their modification can be described geometrically (though not algorithmically) in two steps.  First, the seasonal growth function in `r eqncaps("SomersMod",display="cite")` with $C$=1 is fit to the observed lengths and ages that have had the cumulative $NGT$ subtracted (i.e., the $t^{'}$).  The growth trajectory is then separated at the $WP$ and a horizontal segment that is $NGT$ units long is inserted.  This forms a growth trajectory that smoothly transitions into and out of a no-growth period (`r figcaps("PaulyExPlot",display="cite")`).
+@Paulyetal1992 derived  `r eqncaps("PaulyMod",display="cite")` by assuming $C$=1 (i.e., that the rate of growth is 0 at the $WP$), replacing $2\pi$ with $\frac{2\pi}{1-NGT}$ (i.e., restricting the oscillation to the period of growth), and replacing $K$ with $K^{'}$.  Their modification can be described geometrically (though not algorithmically) in two steps.  First, the seasonal growth function in `r eqncaps("SomersMod",display="cite")` with $C$=1 is fit to the observed lengths and ages that have had the cumulative $NGT$ subtracted (i.e., using $t^{'}$).  The growth trajectory is then separated at the $WP$ and a horizontal segment that is $NGT$ units long is inserted.  This forms a growth trajectory that smoothly transitions into and out of a no-growth period (`r figcaps("PaulyExPlot",display="cite")`).
 
 \ 
 
@@ -197,20 +198,20 @@ axis(1,at=NGTe,labels=c(0.4,1.1,1.8),tcl=0.2,line=-1.7,lwd=0)
 axis(1,at=3.3,labels="<= t",tick=FALSE)
 axis(1,at=3.3,labels="<= t'",tick=FALSE,line=-1.7,lwd=0)
 
-figcaps("PaulyExPlot",paste0("Example growth trajectory of ",eqncaps('vbMain',display='cite')," using ",eqncaps('PaulyMod',display='cite')," with $L_{\\infty}$=",Linf,", $K^{'}$=",Kpr,", $t_{0}$=",t0,", $t_{s}$=",WP-0.5,", and $NGT$=",NGT,".  Each no-growth period is marked by a light gray polygon and each $WP$ is marked by the gray plus symbol.  The ages adjusted for the $NGT$ (i.e., $t^{'}$) are shown above the x-axis."))
+figcaps("PaulyExPlot",paste0("Example VBGF using ",eqncaps('PaulyMod',display='cite')," or ",eqncaps('PaulyMod2',display='cite')," with $L_{\\infty}$=",Linf,", $K^{'}$=",Kpr,", $t_{0}$=",t0,", $NGT$=",NGT,", and $t_{s}$=",WP-0.5," or $WP$=",WP,".  Each no-growth period is marked by a light gray polygon and each $WP$ is marked by the gray plus symbol.  The ages adjusted for the $NGT$ (i.e., $t^{'}$) are shown above the x-axis."))
 ```
 
 `r figcaps("PaulyExPlot")`
 
 \ 
 
-@Paulyetal1992 provided a "diskette" that contained a computer program to estimat the parameters of `eqncaps("PaulyMod",display="cite")`.  The diskette is difficult to obtain and the source code is no longer available (D. Pauly, pers. comm.).  @Paulyetal1992 did describe the operations performed by their program, but their is no description of how $t^{'}$ is operationalized.  This is an important step in fitting `eqncaps("PaulyMod",display="cite")` as $t^{'}$ is a function of $t$, but also of $NGT$ and $t_{s}$ (or $WP$), which are parameters to be estimated during the model-fitting process.  In other words, the values for $t^{'}$ will change with each iteration in the non-linear model-fitting process.
+@Paulyetal1992 provided a "diskette" that contained a computer program to estimate the parameters of `r eqncaps("PaulyMod",display="cite")`.  The diskette is difficult (at best) to obtain and the source code is no longer available (D. Pauly, pers. comm.).  @Paulyetal1992 did describe the operations performed by their program, but their is no description of how $t^{'}$ was operationalized.  This is an important step in using `r eqncaps("PaulyMod",display="cite")` because $t^{'}$ is a function of $t$, but it is also a function of $NGT$ and $t_{s}$, which are parameters to be estimated during the model-fitting process.  In other words, the values for $t^{'}$ will change with each iteration in the non-linear model-fitting process.
 
-The objectives of this note are to (i) describe a function for calculating $t^{'}$; (ii) slightly modify `eqncaps("PaulyMod",display="cite")` to replace $t_{s}$ with $WP$, which has a more useful biological meaning and eases the calculation of $t^{'}$; (iii) provide open-source code for fitting this modified function; and (iv) demonstrate the use of the code for fitting length-at-age data.
+The objectives of this note are to (i) describe a function for calculating $t^{'}$ that may be used in the model-fitting process; (ii) describe a slight modification of `r eqncaps("PaulyMod",display="cite")` that eases the calculation of $t^{'}$ while providing a more meaningful parameter; (iii) provide an (open-source) algorithm for the modified function that can be used in model-fitting; and (iv) demonstrate the use of the modified function for fitting length-at-age data.
 
 # The Modified Model
 
-The $WP$ value is equal to $t_{s}+0.5$ because of the shape of the sin function used to model the oscillations.  Thus, `r eqncaps("PaulyMod",display="cite")` can be simply modified to include $WP$ rather than $t_{s}$ as
+The $WP$ value is equal to $t_{s}+0.5$ because of the shape of the sin function used to model the growth oscillations.  By simple substitution, `r eqncaps("PaulyMod",display="cite")` is modified to include $WP$ rather than $t_{s}$.
 
 \ 
 
@@ -224,7 +225,9 @@ $$
 
 \ 
 
-Note that $WP$ in `r eqncaps("PaulyMod2",display="cite")` is the center of the no-growth period (`r figcaps("PaulyEx",display="cite")`).  Hereafter, `r eqncaps("PaulyMod2",display="cite")` will be used as $WP$ is easier to visualize and to interpret than $t_{s}$.
+Note that in `r eqncaps("PaulyMod2",display="cite")` $WP$ is the center of the no-growth period (`r figcaps("PaulyEx",display="cite")`).
+
+
 
 
 

@@ -29,11 +29,8 @@
   institution = {Department of Computer Sciences and Statistics, University of Rhode Island},
   year =        {1982},
   type =        {Tehcnical Report},
-  journal =     {Fishbyte},
   owner =       {dogle},
-  pages =       {32-34},
-  timestamp =   {2011.09.04},
-  volume =      {8}
+  timestamp =   {2011.09.04}
 }
 
 @Article{Paulyetal1992,

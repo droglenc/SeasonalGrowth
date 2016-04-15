@@ -1,5 +1,5 @@
 ---
-title: "Testing new Pauly Cessational Growth Function"
+title: "Revisiting the von Bertalanffy Seasonal Cessational Growth Function of Pauly et al. (1992)"
 author: "Derek H. Ogle"
 date: "April 9, 2016"
 output:
@@ -18,6 +18,10 @@ knitr::opts_chunk$set(echo = TRUE)
 set.seed(34738423)  # for reproducibility
 library(FSA)
 library(FSAsim)
+library(knitr)
+
+source("iCalc_tpr.R")
+source("VBSCGF.R")
 
 # setup figure, table, and equation captioning
 library(captioner)
@@ -35,61 +39,6 @@ vbSO <- vbFuns("Somers2")
 
 ```{r captions, include=FALSE}
 
-```
-
-
-```{r maketprFun, echo=FALSE}
-################################################################################
-## internal function to compute t-prime
-################################################################################
-iCalc_tpr <- function(t,WP,NGT) {
-  ## No-growth period starts at WP-NGT/2.  Use this to shift each age such that
-  ##    first NGT would correspond to a value of 0
-  tshift <- WP-NGT/2
-  tmp.t <- t-tshift
-  ## Find fraction of year on this new time scale for each adjusted age
-  ##    by substracting whole number age (e.g, 2.79-2)
-  tmp.t2 <- tmp.t-floor(tmp.t)
-  ## Adjust this fraction for no growth ... with the time adjustment no-growth
-  ##    is from 0 to NGT in each "year" ... tprime will not increase in NGT so
-  ##    replace all of these fractions with zeroes.  Above NGT, the tprime must
-  ##    have the NGT removed from it (e.g., if NGT=0.4, then 0.79-0.4 is the
-  ##    fraction of the year for which growth occurred.)
-  for (i in 1:length(tmp.t2)) {
-    if (tmp.t2[i]<=NGT) tmp.t2[i] <- 0
-    else tmp.t2[i] <- tmp.t2[i]-NGT
-  }
-  ## Now get the number of completed growth periods (i.e., floor (tmp.t)) times
-  ##    the length of a growth period (1-NGT) to get the total growth periods
-  ##    completed prior to that year and then add on the fractional piece
-  tmp.t <- floor(tmp.t)*(1-NGT)+tmp.t2
-  ## Shift back to get tprime (why is NGT needed here)
-  tpr <- tmp.t+tshift+NGT
-}
-```
-
-
-```{r makePaulyFun, echo=FALSE}
-################################################################################
-## Main Function
-##   Linf, t0 as usual
-##   Kpr = K-prime as defined in Pauly et al. (units are diff than usual K)
-##   WP = "Winter Period" (middle point of no-growth period)
-##      = ts+0.5 (ts from Pauly et al.)
-##   NGT = "No Growth Time" = "fraction of a year where no growth occurs"
-##   tpr = "t-prime" = actual age (t) minus cumulative NGT prior to t
-################################################################################
-
-paulySC <- function(t,Linf,Kpr=NULL,t0=NULL,WP=NULL,NGT=NULL) {
-  if (length(Linf)==5) { Kpr <- Linf[[2]]; t0 <- Linf[[3]]
-                         WP <- Linf[[4]]; NGT <- Linf[[5]]
-                         Linf <- Linf[[1]] }
-  tpr <- iCalc_tpr(t,WP,NGT)
-  q <- Kpr*(tpr-t0) +
-    (Kpr*(1-NGT)/(2*pi))*sin((2*pi)/(1-NGT)*(tpr-WP-0.5)) -
-    (Kpr*(1-NGT)/(2*pi))*sin((2*pi)/(1-NGT)*(t0-WP-0.5))
-  Linf*(1-exp(-q))
-}
 ```
 
 # Introduction
@@ -154,9 +103,9 @@ $$
 
 \ 
 
-\noindent where $NGT$ is the "no-growth time" or the length of the no growth period (as a fraction of a year) and $t^{'}$ is found by "subtracting from the real age ($t$) the total no-growth time occurring up to age $t$."  Furthermore,  @Paulyetal1992 introduced $K^{'}$ to `r eqncaps("PaulyMod",display="cite")` because the units of $K$ change from $year^{-1}$ in `r eqncaps("SomersMod",display="cite")` to $(1-NGT)^{-1}$ in `r eqncaps("PaulyMod",display="cite")` due to $t^{'}$&lt;$t$ for any $t$.  We further note that $K^{'}$&gt;$K$ because annual growth is compressed into a shorter period ($1-NGT$) in `r eqncaps("PaulyMod",display="cite")` when $NGT$&gt;0.
+\noindent where $NGT$ is the "no-growth time" or the length of the no growth period (as a fraction of a year) and $t^{'}$ is found by "subtracting from the real age ($t$) the total no-growth time occurring up to age $t$."  Furthermore,  @Paulyetal1992 noted that the units on $K$ changed from $year^{-1}$ in `r eqncaps("SomersMod",display="cite")` to $(1-NGT)^{-1}$ in `r eqncaps("PaulyMod",display="cite")`.  To eliminate confusion he suggested using $K^{'}$ in `r eqncaps("PaulyMod",display="cite")`, as we do here.
 
-@Paulyetal1992 derived  `r eqncaps("PaulyMod",display="cite")` by assuming $C$=1 (i.e., that the rate of growth is 0 at the $WP$), replacing $2\pi$ with $\frac{2\pi}{1-NGT}$ (i.e., restricting the oscillation to the period of growth), and replacing $K$ with $K^{'}$.  Their modification can be described geometrically (though not algorithmically) in two steps.  First, the seasonal growth function in `r eqncaps("SomersMod",display="cite")` with $C$=1 is fit to the observed lengths and ages that have had the cumulative $NGT$ subtracted (i.e., using $t^{'}$).  The growth trajectory is then separated at the $WP$ and a horizontal segment that is $NGT$ units long is inserted.  This forms a growth trajectory that smoothly transitions into and out of a no-growth period (`r figcaps("PaulyExPlot",display="cite")`).
+@Paulyetal1992 derived  `r eqncaps("PaulyMod",display="cite")` by assuming $C$=1 (i.e., that the rate of growth is 0 at the $WP$) and replacing $2\pi$ with $\frac{2\pi}{1-NGT}$ (i.e., restricting the oscillation to the period of growth and noting that $K^{'}$ only operates in this shorter period).  Their modification can be described geometrically (though not algorithmically) in two steps.  First, the seasonal growth function in `r eqncaps("SomersMod",display="cite")` with $C$=1 is fit to the observed lengths and ages that have had the cumulative $NGT$ subtracted (i.e., using $t^{'}$).  The growth trajectory is then separated at the $WP$ and a horizontal segment that is $NGT$ units long is inserted.  This forms a growth trajectory that smoothly transitions into and out of a no-growth period (`r figcaps("PaulyExPlot",display="cite")`).
 
 \ 
 
@@ -164,37 +113,38 @@ $$
 ## Setup
 par(xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.5,0),tcl=-0.3,las=1)
 WP <- 0.55; NGT <- 0.3
-Linf <- 30; Kpr <- 0.4; t0 <- -0.1
+Linf <- 30; K <- 0.3; Kpr <- K/(1-NGT); t0 <- 0
 Pcf <- c(Linf,Kpr,t0,WP,NGT)
 ## Get growth trajectory
 t <- seq(-0.1,3.3,length.out=499)
-PL <- paulySC(t,Linf=Pcf)
-## Make schematic plot
-plot(c(-1,-1),xlim=c(-0.1,3.5),ylim=c(0,22),xaxt="n",
-     ylab="Length",xlab="Age (years)")
-axis(1,0:3)
-## Put on NGT polygons
+PL <- VBSCGF(t,Linf=Pcf)
+## Calculate WPs and start and end of NGT
 # find WPs and Lengths at WPs
 WPs <- 0:2+WP
-LatWPs <- paulySC(WPs,Linf=Pcf)
+LatWPs <- VBSCGF(WPs,Linf=Pcf)
 # find start and end of NGT
 NGTs <- WPs-NGT/2
 NGTe <- WPs+NGT/2
-# place polygons
+## Make schematic plot
+plot(c(-1,-1),xlim=c(-0.1,3.5),ylim=c(0,22),xaxt="n",
+     ylab="Length",xlab="Age (years)")
+## Put on NGT polygons
 for (i in 1:length(NGTs)) polygon(c(NGTs[i],NGTs[i],NGTe[i],NGTe[i]),c(0,22,22,0),
                                   col=col2rgbt("black",1/20),border=NA)
 ## Put on the growth trajectory
 lines(PL~t,lwd=2)
-## Place an open point at the WP
+## Place a point at the WP
 points(WPs,LatWPs,pch=3,col="gray50")
 ## Add some important values to the age axis
+axis(1,0:3)
 axis(1,NGTs,tcl=-0.2)
 axis(1,NGTe,tcl=-0.2)
 ## Add the t-prime labels
+# makes inside ticks
 axis(1,at=c(0:3,NGTs,NGTe),labels=NA,tcl=0.2)
-axis(1,at=0:3,labels=c(NA,0.7,1.4,2.1),tcl=0.2,line=-1.7,lwd=0)
-axis(1,at=NGTs,labels=c(0.4,1.1,1.8),tcl=0.2,line=-1.7,lwd=0)
-axis(1,at=NGTe,labels=c(0.4,1.1,1.8),tcl=0.2,line=-1.7,lwd=0)
+axis(1,at=1:3,labels=iCalc_tpr(1:3,WP,NGT),tcl=0.2,line=-1.7,lwd=0)
+axis(1,at=NGTs,labels=iCalc_tpr(NGTs,WP,NGT),tcl=0.2,line=-1.7,lwd=0)
+axis(1,at=NGTe,labels=iCalc_tpr(NGTe,WP,NGT),tcl=0.2,line=-1.7,lwd=0)
 axis(1,at=3.3,labels="<= t",tick=FALSE)
 axis(1,at=3.3,labels="<= t'",tick=FALSE,line=-1.7,lwd=0)
 
@@ -205,112 +155,175 @@ figcaps("PaulyExPlot",paste0("Example VBGF using ",eqncaps('PaulyMod',display='c
 
 \ 
 
-@Paulyetal1992 provided a "diskette" that contained a computer program to estimate the parameters of `r eqncaps("PaulyMod",display="cite")`.  The diskette is difficult (at best) to obtain and the source code is no longer available (D. Pauly, pers. comm.).  @Paulyetal1992 did describe the operations performed by their program, but their is no description of how $t^{'}$ was operationalized.  This is an important step in using `r eqncaps("PaulyMod",display="cite")` because $t^{'}$ is a function of $t$, but it is also a function of $NGT$ and $t_{s}$, which are parameters to be estimated during the model-fitting process.  In other words, the values for $t^{'}$ will change with each iteration in the non-linear model-fitting process.
+@Paulyetal1992 provided a "diskette" that contained a computer program to estimate the parameters of `r eqncaps("PaulyMod",display="cite")`.  The diskette is difficult (at best) to obtain and the source code is no longer available (D. Pauly, pers. comm.).  @Paulyetal1992 did describe the operations performed by their program, but there is no description of how $t^{'}$ was operationalized.  This is an important step in using `r eqncaps("PaulyMod",display="cite")` because $t^{'}$ is a function of $t$, but it is also a function of $NGT$ and $t_{s}$, which are parameters to be estimated during the model-fitting process.  In other words, the values for $t^{'}$ will change with each iteration in the non-linear model-fitting process.
 
-The objectives of this note are to (i) describe a function for calculating $t^{'}$ that may be used in the model-fitting process; (ii) describe a slight modification of `r eqncaps("PaulyMod",display="cite")` that eases the calculation of $t^{'}$ while providing a more meaningful parameter; (iii) provide an (open-source) algorithm for the modified function that can be used in model-fitting; and (iv) demonstrate the use of the modified function for fitting length-at-age data.
+Therefore, the objectives of this note are to (i) describe a function for calculating $t^{'}$ that may be used in the model-fitting process; (ii) describe a slight modification of `r eqncaps("PaulyMod",display="cite")` that eases the calculation of $t^{'}$ while providing a more meaningful parameter; (iii) provide an (open-source) algorithm for the modified function that can be used in model-fitting; and (iv) demonstrate the use of the modified function for fitting length-at-age data.
 
 # The Modified Model
 
-The $WP$ value is equal to $t_{s}+0.5$ because of the shape of the sin function used to model the growth oscillations.  By simple substitution, `r eqncaps("PaulyMod",display="cite")` is modified to include $WP$ rather than $t_{s}$.
+In `r eqncaps("SomersMod",display="cite")`, $WP=t_{s}+\frac{1}{2}$ because the sine function has a period of one year.  The growth period is compressed in `r eqncaps("PaulyMod",display="cite")` to be $1-NGT$.  Thus, the start of the no-growth period ($SNG$) is $t_{s}+\frac{1-NGT}{2}$.  The center of the no-growth period is then $SNG+\frac{NGT}{2}$ or $t_{s}+\frac{1}{2}$.  Thus, $WP=t_{s}+\frac{1}{2}$ is the center of the no-growth period for `r eqncaps("PaulyMod",display="cite")`.
+
+By simple substitution, `r eqncaps("PaulyMod",display="cite")` is modified to include $WP$ rather than $t_{s}$.
 
 \ 
 
 $$
 \begin{aligned}
 q & =K^{'}(t^{'}-t_{0}) \\
-  & +\frac{K^{'}(1-NGT)}{2\pi}sin\left(\frac{2\pi}{1-NGT}(t^{'}-WP-0.5)\right)  \quad \quad \quad \quad \text{`r paste0("(",eqncaps("PaulyMod2",display="num"),")")`} \\
-  & -\frac{K^{'}(1-NGT)}{2\pi}sin\left(\frac{2\pi}{1-NGT}(t_{0}-WP-0.5)\right)
+  & +\frac{K^{'}(1-NGT)}{2\pi}sin\left(\frac{2\pi}{1-NGT}(t^{'}-WP-\frac{1}{2})\right)  \quad \quad \quad \quad \text{`r paste0("(",eqncaps("PaulyMod2",display="num"),")")`} \\
+  & -\frac{K^{'}(1-NGT)}{2\pi}sin\left(\frac{2\pi}{1-NGT}(t_{0}-WP-\frac{1}{2})\right)
 \end{aligned}  
 $$
 
 \ 
 
-Note that in `r eqncaps("PaulyMod2",display="cite")` $WP$ is the center of the no-growth period (`r figcaps("PaulyEx",display="cite")`).
+As noted by @Paulyetal1992 the calculation of $t^{'}$ depends on the observed age ($t$) and the cumulative no-growth time prior to $t$.  In practice, the calculation of $t^{'}$ also depends on the position of the no-growth period within a year.  Here, the position of the no-growth period is defined by the $SNG$.  However, because the $SNG$ has a one-to-one relation with $WP$ and $t_{s}$ it can also be defined relative to these parameters.
 
+The following algorithm is used to convert from observed ages ($t$) to ages adjusted for cumulative $NGT$ prior to age $t$ ($t^{'}$).
 
+1. Shift the age ($t$) by subtracting the start of the no-growth period ($SNG$) from $t$, such that a whole number age represents the start of a no-growth period.  For example, if $SNG$=0.4, then $t$=2.4 will become 2.0 and $t$=2.9 will become 2.5.
+1. Subtract the whole number age from the shifted age such that the remaining decimal represents the fraction of a shifted year.  For example, a 0 will result if the shifted age is 2.0 and a 0.5 will result if the shifted age is 2.5.
+1. Substract the $NGT$ from each of the values from the previous step.
+1. If the value from the previous step is negative, then the age is within the no-growth period and the negative value should be replaced with a zero.  Otherwise, the positive value represents the fraction of a growth period completed.
+1. Add the value from the previous step to the total growth time completed (i.e., the product of the number of growth periods completed and the length of the growth period ($1-NGT$)).
+1. Compute $t{'}$ by adding back the $SNG$ that was subtracted in Step 1.
 
+Further examples of $t^{'}$ values relative to $t$ values are shown in `r figcaps("PaulyExPlot",display="cite")`.  This algorithm for computing $t^{'}$ is implemented in an R [@R2016] function as shown in Appendix 1.  With this, `r eqncaps("paulyMod2",display="cite")` is easly implemented as an R function as shown in Appendix 2.
 
-
-# Methods
+# Fitting the Modified Model
 ## Simulated Data
-
-```{r echo=FALSE}
-WP <- 0.8
-NGT <- 0.5
-gper <- c(WP+NGT/2-1,WP-NGT/2)*365
-## Set some growth parameters
-Linf <- 30; K <- 0.3; t0 <- 0
-## Actually generate the data (with little variability)
-d1 <- vbDataGen(200,Linf=Linf,K=K,t0=t0,maxAge=5,SE=0.01,SD=0.01,paramCV=0.01,
-                growth.per=gper,sample.per=c(1,365),lendigs=1)
-```
-
-
-## R Implementation
-
-
-
-# Model Fitting
-## Simulated Data
-
-
-```{r echo=FALSE, message=FALSE}
+Fish ages (including fractions of a year) and lengths at capture were simulated with vbDataGen() from the FSAsims package (CITATION) in R.  In this application, this functions simulates seasonal fish growth with the following steps: 
+```{r echo=FALSE, results='hide'}
+## Set some common parameters
+Linf <- 30; K <- 0.3; t0 <- -0.1
+## Set bounds for model-fitting
 lwrbnd <- c(Linf=0,K=0,t0=-Inf,WP=0,NGT=0)
 uprbnd <- c(Linf=Inf,K=Inf,t0=Inf,WP=1,NGT=1)
-## Try fitting the PaulySC model
-sv <- list(Linf=32,K=0.32,t0=0,WP=0.8,NGT=0.1)
-fitP1 <- nls(lenCap~paulySC(ageFracY,Linf,K,t0,WP,NGT),data=d1,
-             start=sv,lower=lwrbnd,upper=uprbnd,algorithm="port",control=list(maxiter=100))
-## Make a diagnostic plot
-plot(lenCap~ageFracY,data=d1,pch=19,col=col2rgbt("black",1/5))
-curve(paulySC(x,coef(fitP1)),from=1,to=6,col="red",lwd=3,add=TRUE)
-cfs <- coef(fitP1)
+```
+
+
+```{r echo=FALSE, results="hide", message=FALSE}
+## Setup
+par(xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.5,0),tcl=-0.3,las=1)
+## Set some specific growth parameters
+# fairly typical north temperate situation
+WP <- 0.8; NGT <- 0.5
+gper <- c(WP+NGT/2-1,WP-NGT/2)*365
+## Actually generate the data (with very little variability)
+d1 <- vbDataGen(200,Linf=Linf,K=K,t0=t0,maxAge=5,SE=0.001,SD=0.001,paramCV=0.001,
+                growth.per=gper,sample.per=c(1,365),lendigs=1)
+## Try fitting the VBSCGF model
+sv <- list(Linf=32,K=0.32,t0=0,WP=0.9,NGT=0.3)
+fitP1 <- nls(lenCap~VBSCGF(ageFracY,Linf,K,t0,WP,NGT),data=d1,
+             start=sv,lower=lwrbnd,upper=uprbnd,
+             algorithm="port",control=list(maxiter=100))
+( cfs <- coef(fitP1) )
+## A plot
+plot(lenCap~ageFracY,data=d1,pch=19,col=col2rgbt("black",1/3),
+     xlab="Age (years)",ylab="Length",xlim=c(1,6),ylim=c(7,27))
+curve(VBSCGF(x,coef(fitP1)),from=1,to=6,lwd=2,add=TRUE)
 WPs <- 1:5+cfs[["WP"]]
-LatWPs <- paulySC(WPs,Linf=cfs)
-segments(WPs,LatWPs-2,WPs,LatWPs+2,lty=3,lwd=2,col="red")
+LatWPs <- VBSCGF(WPs,Linf=cfs)
+arrows(WPs,LatWPs+2,WPs,LatWPs+0.2,lwd=2,length=0.1)
 SNGTs <- WPs-cfs[["NGT"]]/2
 ENGTs <- WPs+cfs[["NGT"]]/2
-segments(SNGTs,LatWPs-1,SNGTs,LatWPs+1,lty=3,lwd=2,col="blue")
-segments(ENGTs,LatWPs-1,ENGTs,LatWPs+1,lty=3,lwd=2,col="blue")
-legend("topleft",paste(c("WP","NGT"),c(WP,NGT),sep="="),
-       bty="n",inset=-0.02,text.col=c("red","blue"))
+arrows(SNGTs,LatWPs-0.7,ENGTs,LatWPs-0.7,lwd=2,length=0.05,angle=90,code=3)
 
-cbind(Est=coef(fitP1),confint(fitP1))
-```
-```{r echo=FALSE}
-plot(lenCap~ageFracY,data=d1,pch=19,col=col2rgbt("black",1/5),xlim=c(1.7,1.9),ylim=c(13.425,13.43))
-curve(paulySC(x,coef(fitP1)),from=1,to=6,col="red",lwd=3,add=TRUE,n=1001)
-segments(WPs,LatWPs-2,WPs,LatWPs+2,lty=3,lwd=2,col="red")
-segments(SNGTs,LatWPs-1,SNGTs,LatWPs+1,lty=3,lwd=2,col="blue")
-segments(ENGTs,LatWPs-1,ENGTs,LatWPs+1,lty=3,lwd=2,col="blue")
-
+tmp <- c("Linf=","K=","t0=","WP=","NGT=")
+legend("topleft",paste0(c("Set Values",tmp),c("",Linf,K,t0,WP,NGT)),
+       bty="n",inset=-0.02,cex=0.8)
+cfs <- round(cbind(Est=coef(fitP1),confint(fitP1)),3)
+legend("bottomright",c("Estimated Values",paste0(tmp,cfs[,1]," (",cfs[,2],",",cfs[,3],")")),bty="n",cex=0.8)
 ```
 
-```{r echo=FALSE, message=FALSE}
-## Try fitting the Somers model
-vbSO <- vbFuns("Somers2")
-fitSO1 <- nls(lenCap~vbSO(ageFracY,Linf,K,t0,C,WP),data=d1,
-               start=list(Linf=32,K=0.32,t0=0,C=0.8,WP=0.8),
-               lower=c(Linf=0,K=0,t0=-Inf,C=-1,WP=0),
-               upper=c(Linf=Inf,K=Inf,t0=Inf,C=2,WP=1),
-               algorithm="port",control=list(maxiter=100),trace=FALSE)
-plot(lenCap~ageFracY,data=d1,pch=19,col=col2rgbt("black",1/5))
-curve(vbSO(x,coef(fitSO1)),from=1,to=6,col="red",lwd=2,add=TRUE)
-cbind(coef(fitSO1),confint(fitSO1))
+
+```{r echo=FALSE, results="hide", message=FALSE}
+## Setup
+par(xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.5,0),tcl=-0.3,las=1)
+## Set some specific growth parameters
+# fairly typical north temperate situation
+WP <- 0.8; NGT <- 0.5
+gper <- c(WP+NGT/2-1,WP-NGT/2)*365
+## Actually generate the data (with more variability)
+d1 <- vbDataGen(200,Linf=Linf,K=K,t0=t0,maxAge=5,SE=0.2,SD=0.5,paramCV=0.01,
+                growth.per=gper,sample.per=c(1,365),lendigs=1)
+## Try fitting the VBSCGF model
+sv <- list(Linf=32,K=0.32,t0=0,WP=0.9,NGT=0.3)
+fitP1 <- nls(lenCap~VBSCGF(ageFracY,Linf,K,t0,WP,NGT),data=d1,
+             start=sv,lower=lwrbnd,upper=uprbnd,
+             algorithm="port",control=list(maxiter=100))
+( cfs <- coef(fitP1) )
+## A plot
+plot(lenCap~ageFracY,data=d1,pch=19,col=col2rgbt("black",1/3),
+     xlab="Age (years)",ylab="Length",xlim=c(1,6),ylim=c(7,27))
+curve(VBSCGF(x,coef(fitP1)),from=1,to=6,lwd=2,add=TRUE)
+WPs <- 1:5+cfs[["WP"]]
+LatWPs <- VBSCGF(WPs,Linf=cfs)
+arrows(WPs,LatWPs+2,WPs,LatWPs+0.2,lwd=2,length=0.1)
+SNGTs <- WPs-cfs[["NGT"]]/2
+ENGTs <- WPs+cfs[["NGT"]]/2
+arrows(SNGTs,LatWPs-0.7,ENGTs,LatWPs-0.7,lwd=2,length=0.05,angle=90,code=3)
+
+tmp <- c("Linf=","K=","t0=","WP=","NGT=")
+legend("topleft",paste0(c("Set Values",tmp),c("",Linf,K,t0,WP,NGT)),
+       bty="n",inset=-0.02,cex=0.8)
+cfs <- round(cbind(Est=coef(fitP1),confint(fitP1)),3)
+legend("bottomright",c("Estimated Values",paste0(tmp,cfs[,1]," (",cfs[,2],",",cfs[,3],")")),bty="n",cex=0.8)
+```
+
+
+
+```{r echo=FALSE, results="hide", message=FALSE}
+## Setup
+par(xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.5,0),tcl=-0.3,las=1)
+## Set some specific growth parameters
+# fairly typical north temperate situation
+WP <- 0.8; NGT <- 0.5
+gper <- c(WP+NGT/2-1,WP-NGT/2)*365
+## Actually generate the data (with more variability)
+d1 <- vbDataGen(200,Linf=Linf,K=K,t0=t0,maxAge=5,SE=0.2,SD=0.5,paramCV=0.01,
+                growth.per=gper,sample.per=c(1,365),lendigs=1)
+## Try fitting the VBSCGF model
+sv <- list(Linf=32,K=0.32,t0=0,WP=0.9,NGT=0.3)
+fitP1 <- nls(lenCap~VBSCGF(ageFracY-0.3,Linf,K,t0,WP,NGT),data=d1,
+             start=sv,lower=lwrbnd,upper=uprbnd,
+             algorithm="port",control=list(maxiter=100))
+( cfs <- coef(fitP1) )
+## A plot
+plot(lenCap~I(ageFracY-0.3),data=d1,pch=19,col=col2rgbt("black",1/3),
+     xlab="Age (years)",ylab="Length",xlim=c(1,6),ylim=c(7,27))
+curve(VBSCGF(x,coef(fitP1)),from=1,to=6,lwd=2,add=TRUE)
+WPs <- 1:5+cfs[["WP"]]
+LatWPs <- VBSCGF(WPs,Linf=cfs)
+arrows(WPs,LatWPs+2,WPs,LatWPs+0.2,lwd=2,length=0.1)
+SNGTs <- WPs-cfs[["NGT"]]/2
+ENGTs <- WPs+cfs[["NGT"]]/2
+arrows(SNGTs,LatWPs-0.7,ENGTs,LatWPs-0.7,lwd=2,length=0.05,angle=90,code=3)
+
+tmp <- c("Linf=","K=","t0=","WP=","NGT=")
+legend("topleft",paste0(c("Set Values",tmp),c("",Linf,K,t0,WP-0.3,NGT)),
+       bty="n",inset=-0.02,cex=0.8)
+cfs <- round(cbind(Est=coef(fitP1),confint(fitP1)),3)
+legend("bottomright",c("Estimated Values",paste0(tmp,cfs[,1]," (",cfs[,2],",",cfs[,3],")")),bty="n",cex=0.8)
 ```
 
 ## Real Data
 
-## Appendix
+
+# Discussion
 
 
-```{r}
-<<maketprFun>>
+# Appendices
+## Appendix 1
+
+```{r echo=FALSE, comment=""}
+cat(readLines("iCalc_tpr.R"),sep="\n")
 ```
 
+## Appendix 2
 
-```{r}
-<<makePaulyFun>>
+```{r echo=FALSE, comment=""}
+cat(readLines("VBSCGF.R"),sep="\n")
 ```
 
-## References
+# References

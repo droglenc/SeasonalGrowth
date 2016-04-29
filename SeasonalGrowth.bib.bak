@@ -45,6 +45,16 @@
   timestamp = {2015.06.18}
 }
 
+@Misc{R2016,
+  author =           {{R Development Core Team}},
+  title =            {R: {A} {L}anguage and {E}nvironment for {S}tatistical {C}omputing, v3.3.0. {R} {F}oundation for {S}tatistical {C}omputing, {V}ienna, {A}ustria.},
+  year =             {2016},
+  oglewinfield2009 = {TRUE},
+  owner =            {dogle},
+  timestamp =        {2009.03.02},
+  url =              {http://www.r-project.org}
+}
+
 @Article{SchnuteFournier1980,
   author =    {Schnute, J. and D. Fournier},
   title =     {A new approach to length-frequency analysis: {G}rowth structure.},

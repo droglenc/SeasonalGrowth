@@ -79,6 +79,17 @@
   timestamp = {2010.04.18}
 }
 
+@Article{Stewartetal2013,
+  author =  {Stewart, J. and W.D. Robbins and K. Rowling and A. Hegarty and A. Gould},
+  title =   {A multifaceted approach to modelling growth of the Australian bonito, \emph{Sarda australis} (Family Scombridae), with some observations on its reproductive biology},
+  journal = {Marine and Freshwater Research},
+  year =    {2013},
+  volume =  {64},
+  pages =   {671-678},
+  file =    {:C\:\\aaaWork\\aaaPDF_Library\\aaaJabRef\\Stewartetal_2013_BonitoGrowthReprod.pdf:PDF},
+  url =     {https://www.researchgate.net/publication/258021788_A_multifaceted_approach_to_modelling_growth_of_the_Australian_bonito_Sarda_australis_Family_Scombridae_with_some_observations_on_its_reproductive_biology}
+}
+
 @Article{vonBertalanffy1938,
   author =    {{von {B}ertalanffy}, L.},
   title =     {A quantitative theory of organic growth (inquiries on growth laws {II})},
@@ -86,6 +97,7 @@
   year =      {1938},
   volume =    {10},
   pages =     {181-213},
+  file =      {:C\:\\aaaWork\\aaaPDF_Library\\aaaJabRef\\Growth_VonB1938_Original.pdf:PDF},
   owner =     {dogle},
   timestamp = {2010.04.15}
 }

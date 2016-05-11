@@ -1,0 +1,341 @@
+---
+title: "Revisiting the von Bertalanffy Seasonal Cessational Growth Function of Pauly et al. (1992)"
+author: "Derek H. Ogle"
+date: "April 29, 2016"
+output:
+  pdf_document:
+    fig_height: 3.5
+    fig_width: 4.5
+  html_document:
+    fig_height: 3.5
+    fig_width: 4.5
+csl: american-fisheries-society.csl
+bibliography: SeasonalGrowth.bib
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(34738422)  # for reproducibility
+library(FSA)
+library(FSAsim)
+library(knitr)
+
+source("iCalc_tpr.R")
+source("VBSCGF.R")
+
+# setup figure, table, and equation captioning
+library(captioner)
+figcaps <- captioner(prefix="Figure")
+tblcaps <- captioner(prefix="Table")
+eqncaps <- captioner(prefix="Equation")
+eqncaps("vbMain")
+eqncaps("vbMain2")
+eqncaps("SomersMod")
+eqncaps("PaulyMod")
+eqncaps("PaulyMod2")
+
+vbSO <- vbFuns("Somers")
+```
+
+# Introduction
+
+The mean length-at-age for many animals (e.g., CITATIONS) is often modeled with the von Bertalanffy growth function (VBGF; @vonBertalanffy1938).  The parameterization of the VBGF attributable to @BevertonHolt1957 is most common and may be expressed as 
+
+$$ L_{t} = L_{\infty}(1-e^{-q}) \quad \quad \text{`r paste0("(",eqncaps("vbMain",display="num"),")")`} $$
+
+with 
+
+$$ q=K(t-t_{0}) \quad \quad \text{`r paste0("(",eqncaps("vbMain2",display="num"),")")`} $$
+
+where $L(t)$ is the expected or average length at time (or age) $t$, $L_{\infty}$ is the asymptotic mean length, $K$ is a measure of the exponential rate of approach to the asymptote [@SchnuteFournier1980], and $t_{0}$ is the theoretical time or age (generally negative) at which the mean length would be zero.
+
+Many animals exhibit seasonal oscillations in growth as a response to seasonal changes in environmental factors such as temperature, light, and food supply (CITATIONS).  `r eqncaps("vbMain2",display="cite")` of the traditional VBGF has been modified, usually with a sine function, to model these seasonal oscillations in growth.  The most popular of these modifications, from @HoenigChoudarayHanumara1982 and @Somers1988, is
+
+$$
+\begin{aligned}
+q= & K(t-t_{0}) \\
+   & +\frac{CK}{2\pi}sin(2\pi(t-t_{s}))-\frac{CK}{2\pi}sin(2\pi(t_{0}-t_{s}))  \quad \quad \quad \quad \text{`r paste0("(",eqncaps("SomersMod",display="num"),")")`}
+\end{aligned}  
+$$
+
+where $C$ modulates the amplitude of the growth oscillations and corresponds to the proportional decrease in growth at the depth of the oscillation (i.e., "winter"), and $t_{s}$ is the time between time 0 and the start of the convex portion of the first sinusoidal growth oscillation (i.e., the inflection point).  If $C$=0, then there is no seasonal oscillation and `r eqncaps("SomersMod",display="cite")` reduces to  `r eqncaps("vbMain2",display="cite")` and the typical VBGF (`r figcaps("SomersExPlot",display="cite")`).  If $C$=1, then growth completely stops once a year at the "winter-point" ($WP$), whereas values of 0&lt;$C$&lt;1 result in reduced, but not stopped, growth during the winter (`r figcaps("SomersExPlot",display="cite")`).  Note that $WP=t_{s}+\frac{1}{2}$ because the sine function in `r eqncaps("SomersMod",display="cite")` has a period (i.e., the growth period) of one year.  Some confusion has surrounded the use of `r eqncaps("SomersMod",display="cite")`, though @GarciaBerthouetal2012 carefully clarified its form.
+
+\ 
+
+```{r echo=FALSE, results="hide"}
+par(xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.4,0),tcl=-0.2,las=1)
+ts <- 0.05; Linf <- 30; K <- 0.3; t0 <- -0.1
+C <- c(0,0.5,1,2)
+clr <- col2rgbt(rep("black",4),1/(1:4))
+t <- seq(0,3,length.out=299)
+plot(vbSO(t,Linf=c(Linf,K,t0,C=C[1],ts))~t,type="l",lwd=2,col=clr[1],
+     ylim=c(0,20),ylab="Mean Length",xlab="Age (years)",xaxt="n")
+axis(1,0:3)
+lines(vbSO(t,Linf=c(Linf,K,t0,C=C[2],ts))~t,lwd=2,col=clr[2])
+lines(vbSO(t,Linf=c(Linf,K,t0,C=C[3],ts))~t,lwd=2,col=clr[3])
+lines(vbSO(t,Linf=c(Linf,K,t0,C=C[4],ts))~t,lwd=2,col=clr[4])
+
+legend("topleft",paste("C",C,sep="="),lwd=2,col=clr,bty="n",inset=-0.02)
+
+figcaps("SomersExPlot",paste0("Example VBGF using ",eqncaps('SomersMod',display='cite')," with $L_{\\infty}$=",Linf,", $K$=",K,", $t_{0}$=",t0,", $t_{s}$=",ts," (with $WP$=",ts+0.5,") and four different values of $C$."))
+```
+
+`r figcaps("SomersExPlot")`
+
+\ 
+
+Values of $C$&gt;1 (or &lt;0) in  `r eqncaps("SomersMod",display="cite")` allow seasonal decreases in mean length-at-age (`r figcaps("SomersExPlot",display="cite")`).  A decrease in mean length is unlikely for organisms whose skeletons largely preclude shrinkage [@Paulyetal1992], although a seasonal decrease in mean length-at-age is possible if size-dependent overwinter mortality occurs [@GarciaBerthouetal2012].  @Paulyetal1992 modified `r eqncaps("SomersMod",display="cite")` to include a true seasonal no-growth period where mean length was not allowed to decrease and that included a smooth transition of the modeled mean length-at-age into and out of the no-growth period.  Specifically, their modification is
+
+\ 
+
+$$
+\begin{aligned}
+q= & K^{'}(t^{'}-t_{0}) \\
+   & +\frac{K^{'}(1-NGT)}{2\pi}sin\left(\frac{2\pi}{1-NGT}(t^{'}-t_{s})\right)-\frac{K^{'}(1-NGT)}{2\pi}sin\left(\frac{2\pi}{1-NGT}(t_{0}-t_{s})\right) \quad \quad \quad \quad \text{`r paste0("(",eqncaps("PaulyMod",display="num"),")")`}
+\end{aligned}  
+$$
+
+\ 
+
+\noindent where $NGT$ is the "no-growth time" or the length of the no growth period (as a fraction of a year) and $t^{'}$ is found by "subtracting from the real age ($t$) the total no-growth time occurring up to age $t$" [@Paulyetal1992].  Furthermore,  @Paulyetal1992 noted that the units of $K$ changed from $year^{-1}$ in `r eqncaps("SomersMod",display="cite")` to $(1-NGT)^{-1}$ in `r eqncaps("PaulyMod",display="cite")`.  To eliminate confusion, they suggested using $K^{'}$ in `r eqncaps("PaulyMod",display="cite")`, as we do here.
+
+@Paulyetal1992 devised  `r eqncaps("PaulyMod",display="cite")` by assuming $C$=1 and replacing $2\pi$ with $\frac{2\pi}{1-NGT}$ (i.e., restricting the seasonal oscillation to the growth period and noting that $K^{'}$ only operates during the growth period).  Their modification may be described geometrically (though not algorithmically) in two steps.  First, the seasonal growth function with $C$=1 in `r eqncaps("SomersMod",display="cite")` is fit to the observed lengths and ages that have had the cumulative $NGT$ subtracted (i.e., using $t^{'}$).  The growth trajectory is then separated at each $WP$ and horizontal segments that are $NGT$ units long are inserted at these points.  This forms a growth trajectory that smoothly transitions into and out of the no-growth periods (`r figcaps("PaulyExPlot",display="cite")`).
+
+\ 
+
+```{r echo=FALSE, results="hide"}
+## Setup
+par(xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.5,0),tcl=-0.3,las=1)
+## most parametrs from above
+Kpr <- 0.35; NGT <- 0.3
+Pcf <- c(Linf,Kpr,t0,ts,NGT)
+## Get growth trajectory
+t <- seq(-0.1,3.3,length.out=499)
+PL <- VBSCGF(t,Linf=Pcf)
+## Make schematic plot
+plot(c(-1,-1),xlim=c(-0.1,3.5),ylim=c(0,22),xaxt="n",
+     ylab="Length",xlab="Age (years)")
+## Put on NGT polygons
+WPs <- 0:2+ts+0.5
+LatWPs <- VBSCGF(WPs,Linf=Pcf)
+SNGTs <- WPs-NGT/2
+ENGTs <- WPs+NGT/2
+for (i in 1:length(SNGTs)) polygon(c(SNGTs[i],SNGTs[i],ENGTs[i],ENGTs[i]),c(0,LatWPs[i],LatWPs[i],0),
+                                   col=col2rgbt("black",1/20),border=NA)
+## Mark the WPs
+arrows(WPs,LatWPs-2,WPs,LatWPs-0.2,lwd=2,length=0.1)
+## Mark the NGTs
+arrows(SNGTs,LatWPs-1.2,ENGTs,LatWPs-1.2,lwd=2,length=0.025,angle=90,code=3)
+## Put on the growth trajectory
+lines(PL~t,lwd=2)
+## Put on the ts values
+tss <- 0:3+ts
+Lattss <- VBSCGF(tss,Linf=Pcf)
+points(tss,Lattss,pch=16,col="gray50",cex=1.1)
+## Add some important values to the age axis
+axis(1,0:3)
+axis(1,SNGTs,tcl=-0.2)
+axis(1,ENGTs,tcl=-0.2)
+## Add the t-prime labels
+# makes inside ticks
+axis(1,at=c(0:3,SNGTs,ENGTs),labels=NA,tcl=0.2)
+axis(1,at=1:3,labels=iCalc_tpr(1:3,ts,NGT),tcl=0.2,line=-1.7,lwd=0)
+axis(1,at=SNGTs,labels=iCalc_tpr(SNGTs,ts,NGT),tcl=0.2,line=-1.7,lwd=0)
+axis(1,at=ENGTs,labels=iCalc_tpr(ENGTs,ts,NGT),tcl=0.2,line=-1.7,lwd=0)
+axis(1,at=3.3,labels="<= t",tick=FALSE)
+axis(1,at=3.3,labels="<= t'",tick=FALSE,line=-1.7,lwd=0)
+
+figcaps("PaulyExPlot",paste0("Example VBGF using ",eqncaps('PaulyMod',display='cite')," with $L_{\\infty}$=",Linf,", $K^{'}$=",Kpr,", $t_{0}$=",t0,", $NGT$=",NGT,", and $t_{s}$=",ts," (with $WP$=",ts+0.5,").  Each $t_{s}$ is shown by a gray point, $WP$ by a vertical arrow, and no-growth period by the horizontal interval centered on the $WP$ arrow and the gray region that extends to the x-axis.  The ages adjusted for the $NGT$ (i.e., $t^{'}$) are shown above the x-axis."))
+```
+
+`r figcaps("PaulyExPlot")`
+
+\ 
+
+@Paulyetal1992 provided a "diskette" that contained a computer program to estimate the parameters of `r eqncaps("PaulyMod",display="cite")`.  The diskette is difficult (at best) to obtain and the source code is no longer available (D. Pauly, pers. comm.).  @Paulyetal1992 did describe the operations performed by their program, but there is no description of how $t^{'}$ was operationalized.  This is an important step in using `r eqncaps("PaulyMod",display="cite")` because $t^{'}$ is a function of $t$, but it is also a function of $NGT$ and $t_{s}$, which are parameters to be estimated during the model-fitting process.  Thus, the values for $t^{'}$ change with each iteration of the non-linear model-fitting process.
+
+Therefore, the objectives of this note are to (i) operationalize the calculation of $t^{'}$, (ii) provide an (open-source) algorithm for the calculation of $t^{'}$ and `r eqncaps("PaulyMod",display="cite")` for use in model fitting, and (iii) demonstrate the use of this algorithm.
+
+# Calculating  $t^{'}$
+
+As noted by @Paulyetal1992 the calculation of $t^{'}$ depends on the observed age ($t$) and the cumulative no-growth time prior to $t$.  In practice, the calculation of $t^{'}$ also depends on the position of the no-growth period within a year.  Here, the position of the no-growth period will be defined relative to $WP$ and $NGT$.  The following algorithm may be used to convert from observed ages ($t$) to ages adjusted for cumulative $NGT$ prior to age $t$ ($t^{'}$).
+
+1. Shift the age ($t$) by subtracting the start of the no-growth ($SNG$) period (i.e., $SNG=WP-\frac{NGT}{2}$) from $t$, such that a whole number will represent the start of a no-growth period.  For example, if $SNG$=0.4, then $t$=2.4 will become 2.0 and $t$=2.9 will become 2.5.
+1. Subtract the whole number age from the shifted age from Step 1 such that the remaining decimal represents the fraction of a shifted year.  For example, a 0 will result if the shifted age is 2.0 and a 0.5 will result if the shifted age is 2.5.
+1. Substract the $NGT$ from the value from the previous step.
+1. If the value from the previous step is negative, then the age is within the no-growth period and the negative value should be replaced with a zero.  Otherwise, the positive value represents the amount of time into a growth period.
+1. Add the value from the previous step to the total growth time completed (i.e., the product of the number of growth periods completed and the length of the growth period ($1-NGT$)).
+1. Compute $t{'}$ by adding back the $SNG$ that was subtracted in Step 1.
+
+Further examples of $t^{'}$ values relative to $t$ values are shown in `r figcaps("PaulyExPlot",display="cite")`.  This algorithm for computing $t^{'}$ is implemented in an R [@R2016] function as shown in Appendix 1.  With this, `r eqncaps("PaulyMod",display="cite")` is easly implemented as an R function as shown in Appendix 2.
+
+# Fitting the Function
+## Simulated Data
+Simple simulated data are used initially to demonstrate the fitting of `r eqncaps("PaulyMod",display="cite")`.  The data were simulated by randomly selecting 200 real numbers from a uniform distribution between 0 and 5 to serve as observed ages, plugging these ages into `r eqncaps("PaulyMod",display="cite")` to compute a mean length for each age, and then adding a random deviate from a normal distribution with a mean of 0 and a standard deviation of $\sigma$ to each mean length to simulate observed individual lengths.  Eight data sets were simulated for all combinations of "early" ($t_{s}=0.2$) and "late" ($t_{s}=0.8$) maximum growth points, "short" ($NGT=0.2$) and "long" ($NGT=0.5$) no-growth periods, and "low" ($\sigma=0.3$) and "high" ($\sigma=0.5$) individual variabilities.
+
+The `nls()` function from R was then used to estimate parameter values for the nonlinear `r eqncaps("PaulyMod",display="cite")` fit to each simulated data set.  The "port" algorithm was used so that $L_{\infty}$ and $K^{'}$ could be constrained to be positive and $t_{s}$ and $NGT$ could be constrained to be between 0 and 1.  The estimated parameters for each data were consistently very close to the values used to create the data set, with the possible exception of $t_{0}$.  One example, for a "long" $NGT$, "late" $t_{s}$, and low individual variability, is shown in `r figcaps("PaulySimRes",display="cite")`.  The results from fitting `r eqncaps("PaulyMod",display="cite")` to these data sets are not surprising as one would expect the parameter estimates to be very close to the values used to create them, given that `r eqncaps("PaulyMod2",display="cite")` was used to both create and fit the data.
+
+```{r echo=FALSE, results="hide", message=FALSE}
+## Used Linf, Kpr, and t0 from above
+# fairly typical north temperate situation
+tss <- rep(c(0.1,0.5),each=4)
+NGTs <- rep(rep(c(0.2,0.4),each=2),2)
+sigmas <- rep(c(0.3,0.5),4)
+
+ages <- runif(200,min=0.2,max=5)
+lens <- VBSCGF(ages,Linf,Kpr,t0,tss[1],NGT[1])+rnorm(200,0,sigmas[1])
+dB1 <- data.frame(ages,lens)
+## Try fitting the VBSCGF model
+sv <- list(Linf=32,Kpr=0.32,t0=0,ts=0.2,NGT=0.3)
+lwrbnd <- c(Linf=0,Kpr=0,t0=-Inf,ts=0,NGT=0)
+uprbnd <- c(Linf=Inf,Kpr=Inf,t0=Inf,ts=1,NGT=1)
+fitB1 <- nls(lens~VBSCGF(ages,Linf,Kpr,t0,ts,NGT),data=dB1,
+             start=sv,lower=lwrbnd,upper=uprbnd,
+             algorithm="port",control=list(maxiter=100))
+cfs <- cbind(Est=coef(fitB1),confint(fitB1))
+## A plot
+# Setup
+par(xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.5,0),tcl=-0.3,las=1)
+plot(lens~ages,data=dB1,pch=19,col=col2rgbt("black",1/3),
+     xlab="Age (years)",ylab="Length",xlim=c(0,5),ylim=c(0,22))
+curve(VBSCGF(x,cfs[,"Est"]),from=0,to=6,lwd=2,add=TRUE)
+WPs <- 0:5+cfs["ts","Est"]+0.5
+LatWPs <- VBSCGF(WPs,Linf=cfs[,"Est"])
+arrows(WPs,LatWPs-2,WPs,LatWPs-0.2,lwd=2,length=0.1)
+SNGTs <- WPs-cfs["NGT","Est"]/2
+ENGTs <- WPs+cfs["NGT","Est"]/2
+arrows(SNGTs,LatWPs-1.2,ENGTs,LatWPs-1.2,lwd=2,length=0.025,angle=90,code=3)
+
+figcaps("PaulySimRes",paste0("Example VBGF using ",eqncaps('PaulyMod',display='cite')," with $L_{\\infty}$=",Linf,", $K^{'}$=",Kpr,", $t_{0}$=",t0,", $NGT$=",NGTs[1],", $t_{s}$=",tss[1]," (with $WP$=",ts+0.5,") and $\\sigma$=",sigmas[1],".  Parameter estimates (and 95% confidence intervals) are shown in the first row of ",tblcaps("PaulySimRes",display="cite"),".  Each $WP$ is shown by the vertical arrow and each no-growth period is shown by the horizontal interval bar centered on the $WP$ arrow."))
+```
+
+`r figcaps("PaulySimRes")`
+
+\ 
+
+```{r echo=FALSE, results="hide", message=FALSE}
+## Start with results from above
+res <- matrix(nrow=8,ncol=18)
+res[1,] <- c(tss[1],NGTs[1],sigmas[1],round(cfs["ts",],2),round(cfs["NGT",],2),round(cfs["Linf",],1),round(cfs["Kpr",],2),round(cfs["t0",],2))
+for (i in 2:length(tss)) {
+  tmp <- data.frame(ages,lens=VBSCGF(ages,Linf,Kpr,t0,tss[i],NGTs[i])+rnorm(200,0,sigmas[i]))
+  tmpfit <- nls(lens~VBSCGF(ages,Linf,Kpr,t0,ts,NGT),data=tmp,
+                start=sv,lower=lwrbnd,upper=uprbnd,
+                algorithm="port",control=list(maxiter=100))
+  tmpcfs <- cbind(Est=coef(tmpfit),confint(tmpfit))
+  res[i,] <- c(tss[i],NGTs[i],sigmas[i],round(tmpcfs["ts",],2),round(tmpcfs["NGT",],2),round(tmpcfs["Linf",],1),round(tmpcfs["Kpr",],2),round(tmpcfs["t0",],2))
+}
+colnames(res) <- c("tsset","NGTset","sigmaset","tsest","tslci","tsuci","NGTest","NGTlci","NGTuci","Linfest","Linflci","Linfuci","Kprest","Kprlci","Kpruci","t0est","t0lci","t0uci")
+
+tblcaps("PaulySimRes",paste0("Parameter estimates from fitting ",eqncaps('PaulyMod2',display='cite')," to simulated data sets using $L_{\\infty}$=",Linf,", $K'$=",Kpr,", $t_{0}$=",t0,", and varying values of $t_{s}$, $NGT$, and $\\sigma$."))
+```
+
+`r tblcaps("PaulySimRes")`
+
+```{r echo=FALSE, comment=""}
+res
+```
+
+
+\ 
+
+
+## Real Data
+
+@Stewartetal2013 examined the growth of 215 Bonito (*Sarda australis*) sampled from commercial landings.  Fork lengths (mm) were measured for each fish and decimal ages were recorded as the number of opaque zones observed on otolith thin sections plus the proportion of the year after the designated birthdate (see @Stewartetal2013 for more detailed methods).  @Stewartetal2013 fit `r eqncaps("SomersMod",display="cite")` to these data but constrained $C$ to not exceed 1.  Their model fit resulted in the boundary condition of $C=1$, which suggested that Bonito ceased to grow at *at least* one point.  This result suggests that `r eqncaps("PaulyMod2",display="cite")` should be fit to these data to determine the length of the no-growth period [@Paulyetal1992].
+
+```{r echo=FALSE, results='hide', message=FALSE}
+## Bonito data
+bon <- read.csv("Bonito.csv")
+
+################################################################################
+## Purely Demonstration
+## See if results match that from Stewart et al. (2013)
+lwrbnd <- c(Linf=0,K=0,t0=-Inf,C=0,ts=0)
+uprbnd <- c(Linf=Inf,K=Inf,t0=Inf,C=1,ts=1)
+svBon <- list(Linf=72,K=0.27,t0=0,C=0.6,ts=0.2)
+fitBon1 <- nls(FL~vbSO(Age,Linf,K,t0,C,ts),data=bon,
+               start=svBon,lower=lwrbnd,upper=uprbnd,
+               algorithm="port",control=list(maxiter=100))
+## Linf=71.9, K=0.27, t0=-1.92, C=1, and ts=0.09 ... they all match (within rounding)
+cfBon1 <- cbind(Est=coef(fitBon1),confint(fitBon1))
+################################################################################
+```
+
+```{r echo=FALSE, results='hide', message=FALSE}
+## Fit new model to Bonito data
+lwrbnd <- c(Linf=0,Kpr=0,t0=-Inf,ts=0,NGT=0)
+uprbnd <- c(Linf=Inf,Kpr=Inf,t0=Inf,ts=1,NGT=1)
+svBon <- list(Linf=72,Kpr=0.27,t0=0,ts=0.5,NGT=0.2)
+fitBon2 <- nls(FL~VBSCGF(Age,Linf,Kpr,t0,ts,NGT),data=bon,
+             start=svBon,lower=lwrbnd,upper=uprbnd,
+             algorithm="port",control=list(maxiter=100))
+cfBon2 <- cbind(Est=coef(fitBon2),confint(fitBon2))
+```
+
+`r eqncaps("PaulyMod",display="cite")` fit the Bonito data slightly better than `r eqncaps("SomersMod",display="cite")` with slightly lower residual sums-of-squares (RSS) and Akaike Information Criterion (AIC) values.  The length of the no-growth period was estimated to be `r formatC(cfBon2["NGT","Est"],format="f",digits=3)` or `r formatC(cfBon2["NGT","Est"]*100,format="f",digits=1)`% of the year.  The $t_{s}$ parameters were equal, the $L_\infty$ parameters were similar, but the $t_{0}$ parameters differed somewhat between the two models.  Finally, $K$ from `r eqncaps("SomersMod",display="cite")` was equal to $K'$ from `r eqncaps("PaulyMod2",display="cite")` multiplied by $1-NGT$.
+
+```{r echo=FALSE, results="hide"}
+## A plot
+par(xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.5,0),tcl=-0.3,las=1)
+plot(FL~Age,data=bon,pch=19,col="black",
+     xlab="Age (years)",ylab="Fork Length (mm)",xlim=c(0,4),ylim=c(0,70))
+curve(VBSCGF(x,coef(fitBon2)),from=0,to=4,lwd=4,add=TRUE)
+curve(vbSO(x,coef(fitBon1)),from=0,to=4,lwd=2,add=TRUE,col="gray50")
+
+figcaps("BonitoRes",paste0("Fork length at age for Australian Bonito with the best-fit of ",eqncaps('PaulyMod2',display='cite')," (black line) and ",eqncaps('SomersMod',display='cite')," (gray line) superimposed.  The parameter estimates (and 95% confidence intervals) from the model fits are shown in ",tblcaps("BonitoRes",display='cite'),"."))
+```
+
+`r figcaps("BonitoRes")`
+
+\ 
+
+```{r echo=FALSE, results="hide"}
+cfBon1 <- rbind(cfBon1,c(sum(summary(fitBon1)$residuals^2),NA,NA),c(AIC(fitBon1),NA,NA))
+cfBon2 <- rbind(cfBon2,c(sum(summary(fitBon2)$residuals^2),NA,NA),c(AIC(fitBon2),NA,NA))
+rownames(cfBon1)[6:7] <- rownames(cfBon2)[6:7] <- c("RSS","AIC")
+
+tblcaps("BonitoRes",paste0("Parameter estimates, residual sums-of-squares (RSS), and Akaike Information Criterion (AIC) from the fits of ",eqncaps('SomersMod',display='cite')," and ",eqncaps('PaulyMod2',display='cite')," to the Bonito data."))
+```
+
+`r tblcaps("BonitoRes")`
+
+```{r echo=FALSE, comment=""}
+cat("Somers Model (Equation 3) fit")
+print(round(cfBon1,2),na.print="-")
+cat("Modified Pauly Model (Equation 6) fit")
+print(round(cfBon2,2),na.print="-")
+```
+
+\ 
+
+# Discussion
+
+* General
+    * Fits perfectly simulated data well.
+    * Parameters from real data seem reasonable
+    * Other parameters by maths -- WP=ts+0.5, SNG=WP-NGT/2, K=Kpr*(1-NGT)
+    * Little practical difference between Equations 3 and 5 unless C>>1 and NGT>>0
+* Model-Fitting
+    * Fit Equation 3 first to see if C>=1
+    * Problems due to 5 parameters
+    * Bound parameters
+* Assumptions
+    * ts same time each year and age
+    * NGT same length each year and age
+
+
+# Appendices
+## Appendix 1
+
+```{r echo=FALSE, comment=""}
+cat(readLines("iCalc_tpr.R"),sep="\n")
+```
+
+## Appendix 2
+
+```{r echo=FALSE, comment=""}
+cat(readLines("VBSCGF.R"),sep="\n")
+```
+
+# References

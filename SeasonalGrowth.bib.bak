@@ -1,5 +1,23 @@
 % Encoding: UTF-8
 
+@Article{Baconetal2005,
+  author =  {Bacon, P.J. and W.S.C. Gurney and W. Jones and I.S. Mc{L}aren and A.F. Youngson},
+  title =   {Seasonal growth patterns of wild juvenile fish: partitioning variation among explanatory variables, based on individual growth trajectories of {A}tlantic salmon (\emph{{S}almo salar}) parr},
+  journal = {Journal of Animal Ecology},
+  year =    {2005},
+  volume =  {74},
+  pages =   {1-11}
+}
+
+@Article{Bayley1988,
+  author =  {Bayley, P.B.},
+  title =   {Factors affecting growth rates of young tropical floodplain fishes: seasonality and density-dependence},
+  journal = {Environmental Biology of Fishes},
+  year =    {1988},
+  volume =  {21},
+  pages =   {127-142}
+}
+
 @Book{BevertonHolt1957,
   title =     {On the Dynamics of Exploited Fish Populations},
   publisher = {United Kingdom Ministry of Agriculture and Fisheries},
@@ -12,6 +30,15 @@
   timestamp = {2010.04.15}
 }
 
+@Article{CarmonaCatotetal2014,
+  author =  {Carmona-Catot, G. and A.F.G.N. Santos and P.A. Tedesco and E. Garcia-Berthou},
+  title =   {Quantifying seasonality along a latitudinal gradient: from stream temperature to growth of invasive mosquitofish},
+  journal = {Ecosphere},
+  year =    {2014},
+  volume =  {5},
+  pages =   {1-23}
+}
+
 @Article{GarciaBerthouetal2012,
   author =    {Garcia-Berthou, E. and G. Carmona-Catot and R. Merciai and D. H. Ogle},
   title =     {A technical note on seasonal growth models},
@@ -21,6 +48,29 @@
   pages =     {635-640},
   owner =     {dogle},
   timestamp = {2012.11.12}
+}
+
+@Book{Haddon2011,
+  title =     {Modelling and Quantitative Methods in Fisheries},
+  publisher = {Chapman \& Hall/CRC},
+  year =      {2011},
+  author =    {Haddon, M. J.},
+  address =   {Boca Raton, FL},
+  edition =   {Second},
+  owner =     {dogle},
+  pages =     {449},
+  timestamp = {2010.08.13},
+  url =       {http://www.crcpress.com/product/isbn/9781584885610}
+}
+
+@Article{Harwoodetal2014,
+  author =  {Harwood, L.A. and M.C.S. Kingsley and T.G. Smith},
+  title =   {An emerging pattern of declining growth rates in Belugas of the {B}eaufort {S}ea: 1989-2008},
+  journal = {Arctic},
+  year =    {2014},
+  volume =  {67},
+  pages =   {483-492},
+  url =     {http://arctic.journalhosting.ucalgary.ca/arctic/index.php/arctic/article/download/4423/4495}
 }
 
 @TechReport{HoenigChoudarayHanumara1982,
@@ -81,7 +131,7 @@
 
 @Article{Stewartetal2013,
   author =  {Stewart, J. and W.D. Robbins and K. Rowling and A. Hegarty and A. Gould},
-  title =   {A multifaceted approach to modelling growth of the Australian bonito, \emph{Sarda australis} (Family Scombridae), with some observations on its reproductive biology},
+  title =   {A multifaceted approach to modelling growth of the {A}ustralian bonito, \emph{{S}arda australis} ({F}amily {S}combridae), with some observations on its reproductive biology},
   journal = {Marine and Freshwater Research},
   year =    {2013},
   volume =  {64},

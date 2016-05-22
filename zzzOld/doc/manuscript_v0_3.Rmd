@@ -1,8 +1,12 @@
 ---
-title: "Revisiting the von Bertalanffy Seasonal Cessational Growth Function of Pauly et al. (1992)"
+title: Revisiting the von Bertalanffy Seasonal Cessational Growth Function of Pauly
+  et al. (1992)
 author: "Derek H. Ogle"
 date: '`r format(Sys.time(), "%A, %b %d, %Y")`'
 output:
+  word_document: 
+    fig_height: 3.5
+    fig_width: 4.5
   pdf_document:
     fig_height: 3.5
     fig_width: 4.5
@@ -185,7 +189,7 @@ As noted by @Paulyetal1992 the calculation of $t^{'}$ depends on the observed ag
 Further examples of $t^{'}$ values relative to $t$ values are shown in `r figcaps("PaulyExPlot",display="cite")`.  This algorithm for computing $t^{'}$ is implemented in an R [@R2016] function as shown in Appendix 1.  With this, `r eqncaps("PaulyMod",display="cite")` is easly implemented as an R function as shown in Appendix 2.
 
 # Fitting the Function
-## Real Data
+## Bonito Data
 
 @Stewartetal2013 examined the growth of 215 Bonito (*Sarda australis*) sampled from commercial landings.  Fork lengths (mm) were measured for each fish and decimal ages were recorded as the number of opaque zones observed on otolith thin sections plus the proportion of the year after the designated birthdate (see @Stewartetal2013 for more detailed methods).  @Stewartetal2013 fit `r eqncaps("SomersMod",display="cite")` to these data but constrained $C$ to not exceed 1.  Their model fit resulted in the boundary condition of $C=1$, which suggested that Bonito ceased to grow at *at least* one point.  This result suggests that `r eqncaps("PaulyMod",display="cite")` may fit these data better and allow the length of the no-growth period to be estimated [@Paulyetal1992].
 
@@ -253,6 +257,94 @@ print(round(cfBon2,2),na.print="-")
 ```
 
 
+## Mosquitoefish Data
+
+```{r echo=FALSE, results='hide', message=FALSE}
+## Bonito data
+mqf <- read.csv("Mosquitoefish.csv")
+mqf2 <- filterD(mqf,Sitenum==2)
+mqf4 <- filterD(mqf,Sitenum==4)
+mqf9 <- filterD(mqf,Sitenum==9)
+```
+
+```{r echo=FALSE, results='hide', message=FALSE}
+## Mosquitofish Site 2
+
+################################################################################
+## See if results match that from Emili (Camona-Catot et al. (2014))
+lwrbnd <- c(Linf=0,K=0,t0=-Inf,C=0,ts=0)
+uprbnd <- c(Linf=Inf,K=Inf,t0=Inf,C=Inf,ts=1)
+svmqf2 <- list(Linf=36,K=2,t0=0,C=1.6,ts=0.9)
+fitmqf2 <- nls(SL~vbSO(Age2,Linf,K,t0,C,ts),data=mqf2,
+               start=svmqf2,lower=lwrbnd,upper=uprbnd,
+               algorithm="port",control=list(maxiter=100))
+## Linf=35.85, K=2.012, t0=-0.02, C=1.95, and ts=-0.118 ...
+## they all match (within rounding) except ts but it is off by +1
+cfmqf2 <- cbind(Est=coef(fitmqf2),confint(fitmqf2))
+################################################################################
+
+## Fit new model
+lwrbnd <- c(Linf=0,Kpr=0,t0=-Inf,ts=0,NGT=0)
+uprbnd <- c(Linf=Inf,Kpr=Inf,t0=Inf,ts=1,NGT=1)
+svmqf2p <- list(Linf=36,Kpr=2,t0=0,ts=0.9,NGT=0.5)
+fitmqf2p <- nls(SL~VBSCGF(Age2,Linf,Kpr,t0,ts,NGT),data=mqf2,
+             start=svmqf2p,lower=lwrbnd,upper=uprbnd,
+             algorithm="port",control=list(maxiter=100))
+cfmqf2p <- cbind(Est=coef(fitmqf2p),confint(fitmqf2p))
+```
+
+
+
+```{r echo=FALSE, results='hide', message=FALSE}
+## Mosquitofish Site 4
+
+################################################################################
+## See if results match that from Emili (Camona-Catot et al. (2014))
+lwrbnd <- c(Linf=0,K=0,t0=-Inf,C=0,ts=0)
+uprbnd <- c(Linf=Inf,K=Inf,t0=Inf,C=Inf,ts=1)
+svmqf4 <- list(Linf=36,K=2,t0=0,C=1.6,ts=0.9)
+fitmqf4 <- nls(SL~vbSO(Age2,Linf,K,t0,C,ts),data=mqf4,
+               start=svmqf4,lower=lwrbnd,upper=uprbnd,
+               algorithm="port",control=list(maxiter=100))
+## Linf=45.97, K=1.046, t0=-0.197, C=1.28, and ts=0.751 ... They do
+cfmqf4 <- cbind(Est=coef(fitmqf4),confint(fitmqf4))
+################################################################################
+
+## Fit new model to Mosquitofish Site 5 data
+lwrbnd <- c(Linf=0,Kpr=0,t0=-Inf,ts=0,NGT=0)
+uprbnd <- c(Linf=Inf,Kpr=Inf,t0=Inf,ts=1,NGT=1)
+svmqf4p <- list(Linf=36,Kpr=2,t0=0,ts=0.9,NGT=0.5)
+fitmqf4p <- nls(SL~VBSCGF(Age2,Linf,Kpr,t0,ts,NGT),data=mqf4,
+             start=svmqf4p,lower=lwrbnd,upper=uprbnd,
+             algorithm="port",control=list(maxiter=100))
+cfmqf4p <- cbind(Est=coef(fitmqf4p),confint(fitmqf4p))
+```
+
+
+
+```{r echo=FALSE, results='hide', message=FALSE}
+################################################################################
+## Purely Demonstration -- Mosquitofish Site 9
+## See if results match that from Emili (Camona-Catot et al. (2014))
+lwrbnd <- c(Linf=0,K=0,t0=-Inf,C=0,ts=0)
+uprbnd <- c(Linf=Inf,K=Inf,t0=Inf,C=Inf,ts=1)
+svmqf9 <- list(Linf=36,K=2,t0=0,C=1.6,ts=0.9)
+fitmqf9 <- nls(SL~vbSO(Age2,Linf,K,t0,C,ts),data=mqf9,
+               start=svmqf9,lower=lwrbnd,upper=uprbnd,
+               algorithm="port",control=list(maxiter=100))
+## Linf=41.54, K=1.314, t0=-0.214, C=0.621, and ts=-0.717 ... They do
+cfmqf9 <- cbind(Est=coef(fitmqf9),confint(fitmqf9))
+################################################################################
+
+## Fit new model to Mosquitofish Site 9 data
+lwrbnd <- c(Linf=0,Kpr=0,t0=-Inf,ts=0,NGT=0)
+uprbnd <- c(Linf=Inf,Kpr=Inf,t0=Inf,ts=1,NGT=1)
+svmqf9p <- list(Linf=42,Kpr=1.6,t0=0,ts=0.7,NGT=0.05)
+fitmqf9p <- nls(SL~VBSCGF(Age2,Linf,Kpr,t0,ts,NGT),data=mqf9,
+             start=svmqf9p,lower=lwrbnd,upper=uprbnd,
+             algorithm="port",control=list(maxiter=100))
+cfmqf9p <- cbind(Est=coef(fitmqf9p),confint(fitmqf9p))
+```
 
 
 ## Simulated Data

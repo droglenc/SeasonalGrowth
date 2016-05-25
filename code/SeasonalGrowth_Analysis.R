@@ -9,18 +9,16 @@
 ################################################################################
 ## SETUP
 ################################################################################
+## Load the FSA package
+library(FSA)
+library(nlstools)
 ## Load the R implementation of the Pauly et al. (1992) function
 source("code/iCalc_tpr.R")
 source("code/VBSCGF.R")
 ## Create a Somers function
-vbSO <- function(t,Linf,K,t0,C,ts) {
-  if (length(Linf)==5) { K <- Linf[[2]]; t0 <- Linf[[3]]
-  C <- Linf[[4]]; ts <- Linf[[5]]; Linf <- Linf[[1]] }
-  St <- (C*K)/(2*pi)*sin(2*pi*(t-ts))
-  Sto <- (C*K)/(2*pi)*sin(2*pi*(t0-ts))
-  Linf*(1-exp(-K*(t-t0)-St+Sto))
-}
-
+vbSO <- vbFuns("Somers")
+## Set the random number seed so that the bootstraps stay reproducible
+set.seed(730987)
 
 ################################################################################
 ## Create the demo figure of the Somers model
@@ -91,7 +89,8 @@ SsvBon <- list(Linf=72,K=0.27,t0=0,C=0.6,ts=0.2)
 SfitBon <- nls(FL~vbSO(Age,Linf,K,t0,C,ts),data=bon,
                start=SsvBon,lower=Slwrbnd,upper=Suprbnd,
                algorithm="port",control=list(maxiter=100))
-ScfBon <- cbind(Est=coef(SfitBon),confint(SfitBon))
+SbootBon <- nlsBoot(SfitBon)
+ScfBon <- cbind(Est=coef(SfitBon),confint(SbootBon))
 
 ## 2. Fit new Pauly et al. (1992) function
 Plwrbnd <- c(Linf=0,Kpr=0,t0=-Inf,ts=0,NGT=0)
@@ -100,7 +99,8 @@ PsvBon <- list(Linf=72,Kpr=0.27,t0=0,ts=0.5,NGT=0.2)
 PfitBon <- nls(FL~VBSCGF(Age,Linf,Kpr,t0,ts,NGT),data=bon,
              start=PsvBon,lower=Plwrbnd,upper=Puprbnd,
              algorithm="port",control=list(maxiter=100))
-PcfBon <- cbind(Est=coef(PfitBon),confint(PfitBon))
+PbootBon <- nlsBoot(PfitBon)
+PcfBon <- cbind(Est=coef(PfitBon),confint(PbootBon))
 
 ## 3. Summary results
 ScfBon <- rbind(ScfBon,c(sum(summary(SfitBon)$residuals^2),NA,NA),
@@ -126,14 +126,16 @@ Ssvmqf2 <- list(Linf=36,K=2,t0=0,C=1.6,ts=0.9)
 Sfitmqf2 <- nls(SL~vbSO(Age2,Linf,K,t0,C,ts),data=mqf2,
                 start=Ssvmqf2,lower=Slwrbnd,upper=Suprbnd,
                 algorithm="port",control=list(maxiter=100))
-Scfmqf2 <- cbind(Est=coef(Sfitmqf2),confint(Sfitmqf2))
+Sbootmqf2 <- nlsBoot(Sfitmqf2)
+Scfmqf2 <- cbind(Est=coef(Sfitmqf2),confint(Sbootmqf2))
 
 ## 2. Fit new Pauly et al. (1992) function
 Psvmqf2 <- list(Linf=36,Kpr=2,t0=0,ts=0.9,NGT=0.5)
 Pfitmqf2 <- nls(SL~VBSCGF(Age2,Linf,Kpr,t0,ts,NGT),data=mqf2,
                 start=Psvmqf2,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=list(maxiter=100))
-Pcfmqf2 <- cbind(Est=coef(Pfitmqf2),confint(Pfitmqf2))
+Pbootmqf2 <- nlsBoot(Pfitmqf2)
+Pcfmqf2 <- cbind(Est=coef(Pfitmqf2),confint(Pbootmqf2))
 
 
 ## 3. Summary results
@@ -155,15 +157,16 @@ Ssvmqf4 <- list(Linf=36,K=2,t0=0,C=1.6,ts=0.9)
 Sfitmqf4 <- nls(SL~vbSO(Age2,Linf,K,t0,C,ts),data=mqf4,
                 start=Ssvmqf4,lower=Slwrbnd,upper=Suprbnd,
                 algorithm="port",control=list(maxiter=100))
-Scfmqf4 <- cbind(Est=coef(Sfitmqf4),confint(Sfitmqf4))
+Sbootmqf4 <- nlsBoot(Sfitmqf4)
+Scfmqf4 <- cbind(Est=coef(Sfitmqf4),confint(Sbootmqf4))
 
 ## 2. Fit new Pauly et al. (1992) function
 Psvmqf4 <- list(Linf=36,Kpr=2,t0=0,ts=0.9,NGT=0.5)
 Pfitmqf4 <- nls(SL~VBSCGF(Age2,Linf,Kpr,t0,ts,NGT),data=mqf4,
                 start=Psvmqf4,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=list(maxiter=100))
-Pcfmqf4 <- cbind(Est=coef(Pfitmqf4),confint(Pfitmqf4))
-
+Pbootmqf4 <- nlsBoot(Pfitmqf4)
+Pcfmqf4 <- cbind(Est=coef(Pfitmqf4),confint(Pbootmqf4))
 
 ## 3. Summary results
 Scfmqf4 <- rbind(Scfmqf4,c(sum(summary(Sfitmqf4)$residuals^2),NA,NA),
@@ -184,14 +187,16 @@ Ssvmqf9 <- list(Linf=36,K=2,t0=0,C=1.6,ts=0.9)
 Sfitmqf9 <- nls(SL~vbSO(Age2,Linf,K,t0,C,ts),data=mqf9,
                 start=Ssvmqf9,lower=Slwrbnd,upper=Suprbnd,
                 algorithm="port",control=list(maxiter=100))
-Scfmqf9 <- cbind(Est=coef(Sfitmqf9),confint(Sfitmqf9))
+Sbootmqf9 <- nlsBoot(Sfitmqf9)
+Scfmqf9 <- cbind(Est=coef(Sfitmqf9),confint(Sbootmqf9))
 
 ## 2. Fit new Pauly et al. (1992) function
 Psvmqf9 <- list(Linf=42,Kpr=1.6,t0=0,ts=0.7,NGT=0.05)
 Pfitmqf9 <- nls(SL~VBSCGF(Age2,Linf,Kpr,t0,ts,NGT),data=mqf9,
                 start=Psvmqf9,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=list(maxiter=100))
-Pcfmqf9 <- cbind(Est=coef(Pfitmqf9),confint(Pfitmqf9))
+Pbootmqf9 <- nlsBoot(Pfitmqf9)
+Pcfmqf9 <- cbind(Est=coef(Pfitmqf9),confint(Pbootmqf9))
 
 ## 3. Summary results
 Scfmqf9 <- rbind(Scfmqf9,c(sum(summary(Sfitmqf9)$residuals^2),NA,NA),

@@ -14,12 +14,11 @@ library(FSAdata)   # for Bonito and Mosquitofish data
 library(FSA)       # for Somers function function
 library(nlstools)  # for nls model bootstrapping
 
-## Load the R implementation of the Pauly et al. (1992) function
-source("code/iCalc_tpr.R")
-source("code/VBSCGF.R")
-
 ## Create a Somers function
 vbSO <- vbFuns("Somers")
+
+## Create the Pauly et al. function
+vbSCGF <- vbFuns("Pauly")
 
 ## Set the random number seed so that the bootstraps stay reproducible
 set.seed(730987)
@@ -51,10 +50,10 @@ par(xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.4,0),tcl=-0.2,las=1)
 Kpr <- 0.35; NGT <- 0.3
 Pcf <- c(Linf,Kpr,t0,ts,NGT)
 t <- seq(-0.1,3.3,length.out=499)
-PL <- VBSCGF(t,Linf=Pcf)
+PL <- vbSCGF(t,Linf=Pcf)
 plot(c(-1,-1),xlim=c(-0.1,3.5),ylim=c(0,22),xaxt="n",ylab="Length",xlab="Age (years)")
 WPs <- 0:2+ts+0.5
-LatWPs <- VBSCGF(WPs,Linf=Pcf)
+LatWPs <- vbSCGF(WPs,Linf=Pcf)
 SNGTs <- WPs-NGT/2
 ENGTs <- WPs+NGT/2
 for (i in 1:length(SNGTs))
@@ -64,16 +63,16 @@ arrows(WPs,LatWPs-2,WPs,LatWPs-0.2,lwd=2,length=0.1)
 arrows(SNGTs,LatWPs-1.2,ENGTs,LatWPs-1.2,lwd=2,length=0.025,angle=90,code=3)
 lines(PL~t,lwd=2)
 tss <- 0:3+ts
-Lattss <- VBSCGF(tss,Linf=Pcf)
+Lattss <- vbSCGF(tss,Linf=Pcf)
 points(tss,Lattss,pch=16,col="gray50",cex=1.1)
 axis(1,0:3)
 axis(1,SNGTs,tcl=-0.2)
 axis(1,ENGTs,tcl=-0.2)
 # makes inside ticks
 axis(1,at=c(0:3,SNGTs,ENGTs),labels=NA,tcl=0.2)
-axis(1,at=1:3,labels=iCalc_tpr(1:3,ts,NGT),tcl=0.2,line=-1.7,lwd=0)
-axis(1,at=SNGTs,labels=iCalc_tpr(SNGTs,ts,NGT),tcl=0.2,line=-1.7,lwd=0)
-axis(1,at=ENGTs,labels=iCalc_tpr(ENGTs,ts,NGT),tcl=0.2,line=-1.7,lwd=0)
+axis(1,at=1:3,labels=FSA:::iCalc_tpr(1:3,ts,NGT),tcl=0.2,line=-1.7,lwd=0)
+axis(1,at=SNGTs,labels=FSA:::iCalc_tpr(SNGTs,ts,NGT),tcl=0.2,line=-1.7,lwd=0)
+axis(1,at=ENGTs,labels=FSA:::iCalc_tpr(ENGTs,ts,NGT),tcl=0.2,line=-1.7,lwd=0)
 axis(1,at=3.3,labels="<= t",tick=FALSE)
 axis(1,at=3.3,labels="<= t'",tick=FALSE,line=-1.7,lwd=0)
 dev.off()
@@ -89,7 +88,8 @@ data(Bonito)
 ##    they all match (within rounding)
 Slwrbnd <- c(Linf=0,K=0,t0=-Inf,C=0,ts=0)
 Suprbnd <- c(Linf=Inf,K=Inf,t0=Inf,C=1,ts=1)
-SsvBon <- list(Linf=72,K=0.27,t0=0,C=0.6,ts=0.2)
+vbStarts(fl~age,data=Bonito)
+SsvBon <- list(Linf=46,K=0.41,t0=-2.4,C=0.6,ts=0.2)
 SfitBon <- nls(fl~vbSO(age,Linf,K,t0,C,ts),data=Bonito,
                start=SsvBon,lower=Slwrbnd,upper=Suprbnd,
                algorithm="port",control=list(maxiter=100))
@@ -99,8 +99,8 @@ ScfBon <- cbind(Est=coef(SfitBon),confint(SbootBon))
 ## 2. Fit new Pauly et al. (1992) function
 Plwrbnd <- c(Linf=0,Kpr=0,t0=-Inf,ts=0,NGT=0)
 Puprbnd <- c(Linf=Inf,Kpr=Inf,t0=Inf,ts=1,NGT=1)
-PsvBon <- list(Linf=72,Kpr=0.27,t0=0,ts=0.5,NGT=0.2)
-PfitBon <- nls(fl~VBSCGF(age,Linf,Kpr,t0,ts,NGT),data=Bonito,
+PsvBon <- list(Linf=46,Kpr=0.41,t0=-2.4,ts=0.2,NGT=0.2)
+PfitBon <- nls(fl~vbSCGF(age,Linf,Kpr,t0,ts,NGT),data=Bonito,
              start=PsvBon,lower=Plwrbnd,upper=Puprbnd,
              algorithm="port",control=list(maxiter=100))
 PbootBon <- nlsBoot(PfitBon)
@@ -126,7 +126,8 @@ mqf2 <- subset(Mosquitofish,sitenum==2)
 ##    Linf=35.85, K=2.012, t0=-0.02, C=1.95, and ts=-0.118 ...
 ##    they all match (within rounding) except ts but it is off by +1
 Suprbnd <- c(Linf=Inf,K=Inf,t0=Inf,C=Inf,ts=1)
-Ssvmqf2 <- list(Linf=36,K=2,t0=0,C=1.6,ts=0.9)
+vbStarts(sl~age2,data=mqf2)
+Ssvmqf2 <- list(Linf=43,K=0.11,t0=-2.5,C=1.6,ts=0.9)
 Sfitmqf2 <- nls(sl~vbSO(age2,Linf,K,t0,C,ts),data=mqf2,
                 start=Ssvmqf2,lower=Slwrbnd,upper=Suprbnd,
                 algorithm="port",control=list(maxiter=100))
@@ -134,8 +135,8 @@ Sbootmqf2 <- nlsBoot(Sfitmqf2)
 Scfmqf2 <- cbind(Est=coef(Sfitmqf2),confint(Sbootmqf2))
 
 ## 2. Fit new Pauly et al. (1992) function
-Psvmqf2 <- list(Linf=36,Kpr=2,t0=0,ts=0.9,NGT=0.5)
-Pfitmqf2 <- nls(sl~VBSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf2,
+Psvmqf2 <- list(Linf=43,Kpr=0.22,t0=-2.5,ts=0.9,NGT=0.5)
+Pfitmqf2 <- nls(sl~vbSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf2,
                 start=Psvmqf2,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=list(maxiter=100))
 Pbootmqf2 <- nlsBoot(Pfitmqf2)
@@ -157,7 +158,8 @@ print(round(Pcfmqf2,2),na.print="-")
 ################################################################################
 mqf4 <- subset(Mosquitofish,sitenum==4)
 
-Ssvmqf4 <- list(Linf=36,K=2,t0=0,C=1.6,ts=0.9)
+vbStarts(sl~age2,data=mqf4)
+Ssvmqf4 <- list(Linf=41,K=0.1,t0=-4.7,C=1.6,ts=0.9)
 Sfitmqf4 <- nls(sl~vbSO(age2,Linf,K,t0,C,ts),data=mqf4,
                 start=Ssvmqf4,lower=Slwrbnd,upper=Suprbnd,
                 algorithm="port",control=list(maxiter=100))
@@ -165,8 +167,8 @@ Sbootmqf4 <- nlsBoot(Sfitmqf4)
 Scfmqf4 <- cbind(Est=coef(Sfitmqf4),confint(Sbootmqf4))
 
 ## 2. Fit new Pauly et al. (1992) function
-Psvmqf4 <- list(Linf=36,Kpr=2,t0=0,ts=0.9,NGT=0.5)
-Pfitmqf4 <- nls(sl~VBSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf4,
+Psvmqf4 <- list(Linf=41,Kpr=0.2,t0=-4.7,ts=0.9,NGT=0.5)
+Pfitmqf4 <- nls(sl~vbSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf4,
                 start=Psvmqf4,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=list(maxiter=100))
 Pbootmqf4 <- nlsBoot(Pfitmqf4)
@@ -187,7 +189,8 @@ print(round(Pcfmqf4,2),na.print="-")
 ################################################################################
 mqf9 <- subset(Mosquitofish,sitenum==9)
 
-Ssvmqf9 <- list(Linf=36,K=2,t0=0,C=1.6,ts=0.9)
+vbStarts(sl~age2,data=mqf9)
+Ssvmqf9 <- list(Linf=40,K=0.17,t0=-2.5,C=0.6,ts=0.85)
 Sfitmqf9 <- nls(sl~vbSO(age2,Linf,K,t0,C,ts),data=mqf9,
                 start=Ssvmqf9,lower=Slwrbnd,upper=Suprbnd,
                 algorithm="port",control=list(maxiter=100))
@@ -195,8 +198,8 @@ Sbootmqf9 <- nlsBoot(Sfitmqf9)
 Scfmqf9 <- cbind(Est=coef(Sfitmqf9),confint(Sbootmqf9))
 
 ## 2. Fit new Pauly et al. (1992) function
-Psvmqf9 <- list(Linf=42,Kpr=1.6,t0=0,ts=0.7,NGT=0.05)
-Pfitmqf9 <- nls(sl~VBSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf9,
+Psvmqf9 <- list(Linf=40,Kpr=0.35,t0=-2.5,ts=0.85,NGT=0.05)
+Pfitmqf9 <- nls(sl~vbSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf9,
                 start=Psvmqf9,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=list(maxiter=100))
 Pbootmqf9 <- nlsBoot(Pfitmqf9)
@@ -219,28 +222,28 @@ pdf("results/Figure_3.PDF",width=8,height=8)
 par(mfrow=c(2,2),xaxs="i",yaxs="i",mar=c(3,3,0.6,0.6),mgp=c(1.7,.4,0),tcl=-0.2,las=1)
 plot(fl~age,data=Bonito,pch=19,col=col2rgbt("black",1/4),
      xlab="Age (years)",ylab="Fork Length (mm)",xlim=c(0,4),ylim=c(0,70))
-curve(VBSCGF(x,coef(PfitBon)),from=0,to=4,lwd=4,add=TRUE)
+curve(vbSCGF(x,coef(PfitBon)),from=0,to=4,lwd=4,add=TRUE)
 curve(vbSO(x,coef(SfitBon)),from=0,to=4,lwd=2,add=TRUE,col="gray50")
 text(grconvertX(0.08,"npc","user"),grconvertY(0.92,"npc","user"),"A",cex=1.5)
 
 plot(sl~age2,data=mqf2,pch=19,col=col2rgbt("black",1/6),xaxt="n",
      xlab="Age (years)",ylab="Standard Length (mm)",xlim=c(0,2.4),ylim=c(0,50))
 axis(1,0:2)
-curve(VBSCGF(x,coef(Pfitmqf2)),from=0,to=3,lwd=4,add=TRUE)
+curve(vbSCGF(x,coef(Pfitmqf2)),from=0,to=3,lwd=4,add=TRUE)
 curve(vbSO(x,coef(Sfitmqf2)),from=0,to=3,lwd=2,add=TRUE,col="gray50")
 text(grconvertX(0.08,"npc","user"),grconvertY(0.92,"npc","user"),"B",cex=1.5)
 
 plot(sl~age2,data=mqf4,pch=19,col=col2rgbt("black",1/6),xaxt="n",
      xlab="Age (years)",ylab="Standard Length (mm)",xlim=c(0,2.4),ylim=c(0,50))
 axis(1,0:2)
-curve(VBSCGF(x,coef(Pfitmqf4)),from=0,to=3,lwd=4,add=TRUE)
+curve(vbSCGF(x,coef(Pfitmqf4)),from=0,to=3,lwd=4,add=TRUE)
 curve(vbSO(x,coef(Sfitmqf4)),from=0,to=3,lwd=2,add=TRUE,col="gray50")
 text(grconvertX(0.08,"npc","user"),grconvertY(0.92,"npc","user"),"C",cex=1.5)
 
 plot(sl~age2,data=mqf9,pch=19,col=col2rgbt("black",1/6),xaxt="n",
      xlab="Age (years)",ylab="Standard Length (mm)",xlim=c(0,2.4),ylim=c(0,50))
 axis(1,0:2)
-curve(VBSCGF(x,coef(Pfitmqf9)),from=0,to=3,lwd=4,add=TRUE)
+curve(vbSCGF(x,coef(Pfitmqf9)),from=0,to=3,lwd=4,add=TRUE)
 curve(vbSO(x,coef(Sfitmqf9)),from=0,to=3,lwd=2,add=TRUE,col="gray50")
 text(grconvertX(0.08,"npc","user"),grconvertY(0.92,"npc","user"),"D",cex=1.5)
 dev.off()

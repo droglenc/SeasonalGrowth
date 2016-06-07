@@ -88,8 +88,7 @@ data(Bonito)
 ##    they all match (within rounding)
 Slwrbnd <- c(Linf=0,K=0,t0=-Inf,C=0,ts=0)
 Suprbnd <- c(Linf=Inf,K=Inf,t0=Inf,C=1,ts=1)
-vbStarts(fl~age,data=Bonito)
-SsvBon <- list(Linf=46,K=0.41,t0=-2.4,C=0.6,ts=0.2)
+SsvBon <- vbStarts(fl~age,data=Bonito,param="Somers",fixed=list(C=0.6,ts=0.2))
 SfitBon <- nls(fl~vbSO(age,Linf,K,t0,C,ts),data=Bonito,
                start=SsvBon,lower=Slwrbnd,upper=Suprbnd,
                algorithm="port",control=list(maxiter=100))
@@ -99,7 +98,7 @@ ScfBon <- cbind(Est=coef(SfitBon),confint(SbootBon))
 ## 2. Fit new Pauly et al. (1992) function
 Plwrbnd <- c(Linf=0,Kpr=0,t0=-Inf,ts=0,NGT=0)
 Puprbnd <- c(Linf=Inf,Kpr=Inf,t0=Inf,ts=1,NGT=1)
-PsvBon <- list(Linf=46,Kpr=0.41,t0=-2.4,ts=0.2,NGT=0.2)
+PsvBon <- vbStarts(fl~age,data=Bonito,param="Pauly",fixed=list(ts=0.25,NGT=0.2))
 PfitBon <- nls(fl~vbSCGF(age,Linf,Kpr,t0,ts,NGT),data=Bonito,
              start=PsvBon,lower=Plwrbnd,upper=Puprbnd,
              algorithm="port",control=list(maxiter=100))
@@ -126,8 +125,7 @@ mqf2 <- subset(Mosquitofish,sitenum==2)
 ##    Linf=35.85, K=2.012, t0=-0.02, C=1.95, and ts=-0.118 ...
 ##    they all match (within rounding) except ts but it is off by +1
 Suprbnd <- c(Linf=Inf,K=Inf,t0=Inf,C=Inf,ts=1)
-vbStarts(sl~age2,data=mqf2)
-Ssvmqf2 <- list(Linf=43,K=0.11,t0=-2.5,C=1.6,ts=0.9)
+Ssvmqf2 <- vbStarts(sl~age2,data=mqf2,param="Somers",fixed=list(C=1.5,ts=0.9))
 Sfitmqf2 <- nls(sl~vbSO(age2,Linf,K,t0,C,ts),data=mqf2,
                 start=Ssvmqf2,lower=Slwrbnd,upper=Suprbnd,
                 algorithm="port",control=list(maxiter=100))
@@ -135,7 +133,7 @@ Sbootmqf2 <- nlsBoot(Sfitmqf2)
 Scfmqf2 <- cbind(Est=coef(Sfitmqf2),confint(Sbootmqf2))
 
 ## 2. Fit new Pauly et al. (1992) function
-Psvmqf2 <- list(Linf=43,Kpr=0.22,t0=-2.5,ts=0.9,NGT=0.5)
+Psvmqf2 <- vbStarts(sl~age2,data=mqf2,param="Pauly",fixed=list(ts=0.9,NGT=0.5))
 Pfitmqf2 <- nls(sl~vbSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf2,
                 start=Psvmqf2,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=list(maxiter=100))
@@ -158,16 +156,15 @@ print(round(Pcfmqf2,2),na.print="-")
 ################################################################################
 mqf4 <- subset(Mosquitofish,sitenum==4)
 
-vbStarts(sl~age2,data=mqf4)
-Ssvmqf4 <- list(Linf=41,K=0.1,t0=-4.7,C=1.6,ts=0.9)
+Ssvmqf4 <- vbStarts(sl~age2,data=mqf4,param="Somers",fixed=list(K=0.6,C=1.6,ts=0.9),plot=TRUE)
 Sfitmqf4 <- nls(sl~vbSO(age2,Linf,K,t0,C,ts),data=mqf4,
                 start=Ssvmqf4,lower=Slwrbnd,upper=Suprbnd,
-                algorithm="port",control=list(maxiter=100))
+                algorithm="port",control=list(maxiter=1000))
 Sbootmqf4 <- nlsBoot(Sfitmqf4)
 Scfmqf4 <- cbind(Est=coef(Sfitmqf4),confint(Sbootmqf4))
 
 ## 2. Fit new Pauly et al. (1992) function
-Psvmqf4 <- list(Linf=41,Kpr=0.2,t0=-4.7,ts=0.9,NGT=0.5)
+Psvmqf4 <- vbStarts(sl~age2,data=mqf4,param="Pauly",fixed=list(ts=0.9,NGT=0.5))
 Pfitmqf4 <- nls(sl~vbSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf4,
                 start=Psvmqf4,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=list(maxiter=100))
@@ -189,8 +186,7 @@ print(round(Pcfmqf4,2),na.print="-")
 ################################################################################
 mqf9 <- subset(Mosquitofish,sitenum==9)
 
-vbStarts(sl~age2,data=mqf9)
-Ssvmqf9 <- list(Linf=40,K=0.17,t0=-2.5,C=0.6,ts=0.85)
+Ssvmqf9 <- vbStarts(sl~age2,data=mqf9,param="Somers",fixed=list(t0=-2.5,C=0.6,ts=0.85))
 Sfitmqf9 <- nls(sl~vbSO(age2,Linf,K,t0,C,ts),data=mqf9,
                 start=Ssvmqf9,lower=Slwrbnd,upper=Suprbnd,
                 algorithm="port",control=list(maxiter=100))
@@ -198,7 +194,7 @@ Sbootmqf9 <- nlsBoot(Sfitmqf9)
 Scfmqf9 <- cbind(Est=coef(Sfitmqf9),confint(Sbootmqf9))
 
 ## 2. Fit new Pauly et al. (1992) function
-Psvmqf9 <- list(Linf=40,Kpr=0.35,t0=-2.5,ts=0.85,NGT=0.05)
+Psvmqf9 <- vbStarts(sl~age2,data=mqf9,param="Pauly",fixed=list(ts=0.85,NGT=0.05))
 Pfitmqf9 <- nls(sl~vbSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf9,
                 start=Psvmqf9,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=list(maxiter=100))

@@ -11,7 +11,7 @@
 ################################################################################
 ## Load required packages
 library(FSAdata)   # for Bonito and Mosquitofish data
-library(FSA)       # for Somers function function
+library(FSA)       # for Somers and Pauly function functions
 library(nlstools)  # for nls model bootstrapping
 
 ## Create a Somers function

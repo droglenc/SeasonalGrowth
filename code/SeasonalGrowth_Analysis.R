@@ -1,13 +1,27 @@
 ################################################################################
 ################################################################################
 ##
-## Analysis script for ...
+## Analysis script for ... Ogle, DH.  201X.  An Algorithm for the von Bertalanffy
+##   Seasonal Cessation in Growth Function of Pauly et al. (1992).  Submitted to
+##   Fisheries Research.
+##
+## Need to be patient with bootstrapping functions.  May also need to create a
+##   directory called "results" in your current working directory to hold the
+##   figures produced by the pdf() function (or not run the pdf() functions to
+##   simple produce the figures on a local device.)
 ##
 ################################################################################
 ################################################################################
 
 ################################################################################
 ## SETUP
+## 
+## Requires "latest" versions of FSA (>=0.8.8) and FSAdata (>=0.3.3) from CRAN.
+##   These can be installed as follows:
+##
+##   install.packages("FSA")
+##   install.packages("FSAdata")
+##
 ################################################################################
 ## Load required packages
 library(FSAdata)   # for Bonito and Mosquitofish data
@@ -18,7 +32,12 @@ library(nlstools)  # for nls model bootstrapping
 vbSO <- vbFuns("Somers")
 
 ## Create the Pauly et al. function
-vbSCGF <- vbFuns("Pauly")
+( vbSCGF <- vbFuns("Pauly") )
+
+## Note that vbSCGF uses an internal function for computing the t-prime values.
+##  The next line displays this internal function (Step comments correspond to
+##  the steps outlined in the manuscript).
+FSA:::iCalc_tpr
 
 ## Set the random number seed so that the bootstraps stay reproducible
 set.seed(730987)
@@ -116,7 +135,7 @@ print(round(PcfBon,2),na.print="-")
 
 
 ################################################################################
-## Example analysis with the Bonito data -- Site 2
+## Example analysis with the Mosquitofish data -- Site 2
 ################################################################################
 data(Mosquitofish)
 mqf2 <- subset(Mosquitofish,sitenum==2)
@@ -140,7 +159,6 @@ Pfitmqf2 <- nls(sl~vbSCGF(age2,Linf,Kpr,t0,ts,NGT),data=mqf2,
 Pbootmqf2 <- nlsBoot(Pfitmqf2)
 Pcfmqf2 <- cbind(Est=coef(Pfitmqf2),confint(Pbootmqf2))
 
-
 ## 3. Summary results
 Scfmqf2 <- rbind(Scfmqf2,c(sum(summary(Sfitmqf2)$residuals^2),NA,NA),
                 c(AIC(Sfitmqf2),NA,NA))
@@ -152,7 +170,7 @@ print(round(Pcfmqf2,2),na.print="-")
 
 
 ################################################################################
-## Example analysis with the Bonito data -- Site 4
+## Example analysis with the Mosquitofish data -- Site 4
 ################################################################################
 mqf4 <- subset(Mosquitofish,sitenum==4)
 
@@ -182,7 +200,7 @@ print(round(Pcfmqf4,2),na.print="-")
 
 
 ################################################################################
-## Example analysis with the Bonito data -- Site 9
+## Example analysis with the Mosquitofish data -- Site 9
 ################################################################################
 mqf9 <- subset(Mosquitofish,sitenum==9)
 

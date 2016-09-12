@@ -9,7 +9,8 @@
 ##   directory called "results" in your current working directory to hold the
 ##   figures produced by pdf() (or not run the pdf() and dev.off() functions to
 ##   simply produce the figures on the local device).  Could use (in R) to
-##   create the directory ...
+##   create the directory (assumes that you have set your working directory to
+##   the same location as this script) ...
 ##
 ##   dir.create("results")
 ##
@@ -366,7 +367,7 @@ PsvBon1 <- list(Linf=60,Kpr=0.2,t0=0,ts=0.1,NGT=0.1)
 PfitBon1 <- nls(fl~vbPA(age,Linf,Kpr,t0,ts,NGT),data=Bonito,
                 start=PsvBon1,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=ctrl)
-PsvBon2 <- list(Linf=40,Kpr=0.7,t0=-1,ts=0.3,NGT=0.5)
+PsvBon2 <- list(Linf=50,Kpr=0.7,t0=-1,ts=0.3,NGT=0.5)
 PfitBon2 <- nls(fl~vbPA(age,Linf,Kpr,t0,ts,NGT),data=Bonito,
                 start=PsvBon2,lower=Plwrbnd,upper=Puprbnd,
                 algorithm="port",control=ctrl)
@@ -474,7 +475,7 @@ Psvmqf42 <- list(Linf=40,Kpr=0.3,t0=0,ts=0.9,NGT=0.7)
 Pfitmqf42 <- nls(sl~vbPA(age2,Linf,Kpr,t0,ts,NGT),data=mqf4,
                  start=Psvmqf42,lower=Plwrbnd,upper=Puprbnd,
                  algorithm="port",control=ctrl)
-Psvmqf43 <- list(Linf=60,Kpr=0.2,t0=-2,ts=0.7,NGT=0.7)
+Psvmqf43 <- list(Linf=50,Kpr=0.2,t0=-2,ts=0.7,NGT=0.7)
 Pfitmqf43 <- nls(sl~vbPA(age2,Linf,Kpr,t0,ts,NGT),data=mqf4,
                  start=Psvmqf43,lower=Plwrbnd,upper=Puprbnd,
                  algorithm="port",control=ctrl)
